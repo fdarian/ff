@@ -1,0 +1,120 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`saveMessage simple one step 1`] = `
+[
+  {
+    "content": [
+      {
+        "text": "Hello",
+        "type": "text",
+      },
+    ],
+    "role": "user",
+  },
+  {
+    "content": [
+      {
+        "providerOptions": undefined,
+        "text": "Hi",
+        "type": "text",
+      },
+    ],
+    "role": "assistant",
+  },
+]
+`;
+
+exports[`saveMessage multi turn tool call 1`] = `
+[
+  {
+    "content": [
+      {
+        "text": "Hello",
+        "type": "text",
+      },
+    ],
+    "role": "user",
+  },
+  {
+    "content": [
+      {
+        "providerOptions": undefined,
+        "text": "Hi",
+        "type": "text",
+      },
+    ],
+    "role": "assistant",
+  },
+  {
+    "content": [
+      {
+        "text": "Hello",
+        "type": "text",
+      },
+    ],
+    "role": "user",
+  },
+  {
+    "content": [
+      {
+        "input": {
+          "query": "any",
+        },
+        "providerExecuted": undefined,
+        "providerOptions": undefined,
+        "toolCallId": "tool-1-call-1",
+        "toolName": "one",
+        "type": "tool-call",
+      },
+      {
+        "input": {
+          "another": "any",
+        },
+        "providerExecuted": undefined,
+        "providerOptions": undefined,
+        "toolCallId": "tool-2-call-1",
+        "toolName": "two",
+        "type": "tool-call",
+      },
+    ],
+    "role": "assistant",
+  },
+  {
+    "content": [
+      {
+        "output": {
+          "type": "json",
+          "value": {
+            "query": "any",
+          },
+        },
+        "toolCallId": "tool-1-call-1",
+        "toolName": "one",
+        "type": "tool-result",
+      },
+      {
+        "output": {
+          "type": "json",
+          "value": {
+            "another": "any",
+          },
+        },
+        "toolCallId": "tool-2-call-1",
+        "toolName": "two",
+        "type": "tool-result",
+      },
+    ],
+    "role": "tool",
+  },
+  {
+    "content": [
+      {
+        "providerOptions": undefined,
+        "text": "all good",
+        "type": "text",
+      },
+    ],
+    "role": "assistant",
+  },
+]
+`;
