@@ -5,6 +5,7 @@ import {
 	jsonb,
 	pgSchema,
 	type ReferenceConfig,
+	text,
 	timestamp,
 	unique,
 	uuid,
@@ -21,9 +22,9 @@ export const threads = schema.table(
 	{
 		// --
 		id: bigserial({ mode: 'number' }).$type<ThreadsPk>().primaryKey(), // Internal primary key
-		publicId: uuid().$type<ThreadId>().notNull(), // Public `threadId`
+		publicId: text().$type<ThreadId>().notNull(), // Public `threadId`
 		// --
-		resourceId: uuid().$type<ResourceId>().notNull(),
+		resourceId: text().$type<ResourceId>().notNull(),
 		createdAt: timestamp()
 			.$defaultFn(() => new Date())
 			.notNull(),
