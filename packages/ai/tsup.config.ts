@@ -1,11 +1,18 @@
 import { defineConfig } from 'tsup';
 
 export default defineConfig({
-	entry: ['src/index.ts'],
+	entry: ['src/index.ts', 'src/providers/drizzle/index.ts'],
 	format: ['cjs', 'esm'],
 	dts: true,
 	splitting: false,
 	sourcemap: true,
 	clean: true,
-	// external: [],
+	external: [
+		'@ai-sdk/valibot',
+		'ai',
+		'drizzle-orm',
+		'effect',
+		'postgres',
+		'valibot',
+	],
 });
