@@ -1,3 +1,3 @@
-import { hello } from 'f-ai';
+import { hello } from 'ff-ai';
 
 console.log(hello());
