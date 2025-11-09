@@ -1,0 +1,13 @@
+{
+	"name": "@repo/root",
+	"workspaces": {
+		"packages": [
+			"apps/*",
+			"packages/*",
+			"internals/*"
+		]
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.3.4"
+	}
+}
