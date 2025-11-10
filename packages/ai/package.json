@@ -1,6 +1,6 @@
 {
 	"name": "ff-ai",
-	"version": "0.0.3",
+	"version": "0.0.4",
 	"type": "module",
 	"exports": {
 		".": {
@@ -44,10 +44,10 @@
 	"publishConfig": {
 		"access": "public"
 	},
-	"homepage": "https://github.com/fdari/ff.git",
+	"homepage": "https://github.com/fdarian/ff.git",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/fdari/ff.git"
+		"url": "git+https://github.com/fdarian/ff.git"
 	},
 	"bugs": {
 		"url": "https://github.com/fdarian/ff/issues"
