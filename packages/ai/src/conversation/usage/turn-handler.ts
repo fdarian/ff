@@ -19,11 +19,11 @@ export const createTurnHandler = Effect.fn(function* (ctx: {
 			});
 			return messages;
 		}),
-		saveUserMessage: Effect.fn(function* (message: ConversationMessage.Type) {
+		saveUserMessage: Effect.fn(function* (message: Ai.ModelMessage) {
 			yield* store.saveMessages({
 				resourceId: ctx.identifier.resourceId,
 				threadId: ctx.identifier.threadId,
-				messages: [message],
+				messages: [ConversationMessage.fromModelMessage(message)],
 			});
 		}),
 		onStep: Effect.fn(function* <TOOLS extends Ai.ToolSet>(
