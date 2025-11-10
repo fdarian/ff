@@ -2,10 +2,16 @@
 	"name": "@repo/scratchpad",
 	"type": "module",
 	"dependencies": {
-		"ff-ai": "workspace:*"
+		"@ai-sdk/xai": "^2.0.31",
+		"ai": "^5.0.89",
+		"effect": "^3.19.3",
+		"ff-ai": "workspace:*",
+		"postgres": "^3.4.7"
 	},
 	"devDependencies": {
 		"@total-typescript/tsconfig": "^1.0.4",
+		"@types/bun": "^1.3.2",
+		"drizzle-kit": "^0.31.6",
 		"typescript": "^5.9.3"
 	}
 }
