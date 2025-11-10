@@ -19,7 +19,8 @@
 		"src"
 	],
 	"scripts": {
-		"build": "tsup"
+		"build": "tsup",
+		"dev": "tsup --watch"
 	},
 	"devDependencies": {
 		"@total-typescript/tsconfig": "^1.0.4",
