@@ -1,5 +1,6 @@
 {
 	"name": "@repo/scratchpad",
+	"private": true,
 	"type": "module",
 	"dependencies": {
 		"@ai-sdk/xai": "^2.0.31",
