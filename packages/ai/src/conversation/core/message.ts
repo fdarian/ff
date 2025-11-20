@@ -23,3 +23,27 @@ export namespace ConversationMessage {
 		};
 	}
 }
+
+export function convertToUIMessage(
+	message: ConversationMessage.Type,
+): Ai.UIMessage {
+	const parts: Array<Ai.UIMessagePart<Ai.UIDataTypes, Ai.UITools>> = [];
+
+	if (typeof message.content === 'string') {
+		parts.push({ type: 'text', text: message.content });
+	} else {
+		for (const part of message.content) {
+			if (part.type === 'text' && part.text) {
+				parts.push({ type: 'text', text: part.text });
+			}
+		}
+	}
+
+	const role = message.role === 'tool' ? 'assistant' : message.role;
+
+	return {
+		id: message.id,
+		role,
+		parts,
+	};
+}
