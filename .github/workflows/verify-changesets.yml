@@ -1,0 +1,31 @@
+name: Verify Changesets
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  verify:
+    name: Verify changeset exists
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for changeset
+        run: |
+          # Skip check for Version Packages PR
+          if [[ "${{ github.event.pull_request.title }}" == "Version Packages"* ]]; then
+            echo "✅ Skipping changeset check for Version Packages PR"
+            exit 0
+          fi
+
+          # Check if any changeset files were added
+          if git diff --name-only origin/${{ github.base_ref }} HEAD | grep -q "^\.changeset/.*\.md$"; then
+            echo "✅ Changeset found"
+          else
+            echo "❌ No changeset found. Run 'bun changeset' to create one"
+            exit 1
+          fi

@@ -7,7 +7,14 @@
 			"internals/*"
 		]
 	},
+	"scripts": {
+		"changeset": "changeset",
+		"ci:version": "changeset version && bun install --no-frozen-lockfile",
+		"ci:release": "bun run build && changeset publish",
+		"build": "bun run --filter 'ff-ai' build && bun run --filter 'ff-effect' build"
+	},
 	"devDependencies": {
-		"@biomejs/biome": "^2.3.4"
+		"@biomejs/biome": "^2.3.4",
+		"@changesets/cli": "^2.29.7"
 	}
 }
