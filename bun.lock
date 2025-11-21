@@ -53,6 +53,7 @@
         "ai": "^5.0.89",
         "effect": "^3.19.3",
         "ff-ai": "workspace:*",
+        "ff-effect": "workspace:*",
         "postgres": "^3.4.7",
       },
       "devDependencies": {
