@@ -34,7 +34,7 @@
     },
     "packages/effect": {
       "name": "ff-effect",
-      "version": "0.0.1",
+      "version": "0.0.2",
       "devDependencies": {
         "@total-typescript/tsconfig": "^1.0.4",
         "@types/bun": "^1.3.2",
@@ -53,7 +53,6 @@
         "ai": "^5.0.89",
         "effect": "^3.19.3",
         "ff-ai": "workspace:*",
-        "ff-effect": "workspace:*",
         "postgres": "^3.4.7",
       },
       "devDependencies": {
