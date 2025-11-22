@@ -11,7 +11,7 @@
 		"changeset": "changeset",
 		"ci:version": "changeset version && bun install --no-frozen-lockfile",
 		"ci:release": "bun run build && changeset publish",
-		"build": "bun run --filter 'ff-ai' build && bun run --filter 'ff-effect' build"
+		"build": "bun run --filter 'ff-ai' build && bun run --filter 'ff-effect' build && bun run --filter 'ff-serv' build"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.3.4",
