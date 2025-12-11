@@ -1,6 +1,6 @@
 import { xai } from '@ai-sdk/xai';
 import { FetchHttpClient } from '@effect/platform';
-import { Effect } from 'effect';
+import { Effect, Logger, LogLevel } from 'effect';
 import { getModelUsageCost } from 'ff-ai';
 import { runTester } from '../utils/run-tester';
 
@@ -20,5 +20,5 @@ runTester({
 				usage: { inputTokens: 1000, outputTokens: 100, totalTokens: 1100 },
 			}),
 		);
-	}),
+	}).pipe(Logger.withMinimumLogLevel(LogLevel.Debug)),
 });
