@@ -25,7 +25,7 @@ namespace ModelInput {
 
 	export function getProvider(model: Type): string {
 		if (typeof model === 'string') return 'vercel';
-		return model.provider;
+		return model.provider.replaceAll('.chat', '');
 	}
 
 	export function getModelId(model: Type): string {
