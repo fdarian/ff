@@ -13,6 +13,7 @@ export default defineConfig({
 		'ai',
 		'drizzle-orm',
 		'effect',
+		'@effect/platform',
 		'postgres',
 		'valibot',
 	],

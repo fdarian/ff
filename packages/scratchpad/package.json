@@ -4,6 +4,7 @@
 	"type": "module",
 	"dependencies": {
 		"@ai-sdk/xai": "^2.0.31",
+		"@effect/platform": "^0.93.6",
 		"ai": "^5.0.89",
 		"effect": "^3.19.3",
 		"ff-ai": "workspace:*",
