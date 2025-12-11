@@ -70,12 +70,15 @@ class ModelsDevData extends Schema.Class<ModelsDevData>('ff-ai/ModelsDevData')({
 
 const fetchModelsDev = (model: ModelInput) =>
 	Effect.gen(function* () {
-		const response =
-			yield* HttpClient.get(`https://raw.githubusercontent.com/sst/models.dev/refs/heads/dev/providers\
+		const url = `https://raw.githubusercontent.com/sst/models.dev/refs/heads/dev/providers\
 /${ModelInput.getProvider(model)}/\
-models/${ModelInput.getModelId(model)}.toml`);
+models/${ModelInput.getModelId(model)}.toml`;
+		const response = yield* HttpClient.get(url);
 		const text = yield* response.text;
-		if (response.status === 404) return null;
+		if (response.status === 404) {
+			yield* Effect.logDebug(`${url} not found`);
+			return null;
+		}
 
 		const parsed = yield* Effect.try({
 			try: () => toml.parse(text),
