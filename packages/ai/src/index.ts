@@ -7,6 +7,11 @@ export { createTurnHandler } from './conversation/usage/turn-handler.js';
 import type { ConversationMessage as ConversationMessageModule } from './conversation/core/message.js';
 export type ConversationMessage = ConversationMessageModule.Type;
 
+// - Pricing
+
+export { getModelUsageCost } from './pricing/model-price.js';
+export type { UsageCost } from './pricing/model-price.js';
+
 // - Misc
 
 export function hello() {
