@@ -25,6 +25,10 @@ namespace ModelInput {
 
 	export function getProvider(model: Type): string {
 		if (typeof model === 'string') return 'vercel';
+
+		if (model.provider === 'google.generative-ai') {
+			return 'google';
+		}
 		return model.provider.replaceAll('.chat', '');
 	}
 
