@@ -1,3 +1,4 @@
+import type * as AiProvider from '@ai-sdk/provider';
 import type * as Ai from 'ai';
 import { Effect } from 'effect';
 import * as toml from 'smol-toml';
@@ -19,9 +20,8 @@ export type UsageCost = {
 
 const priceCache = new Map<string, ModelPrice>();
 
-type ModelInput = ModelInput.Type;
 namespace ModelInput {
-	type Type = Ai.LanguageModel | string;
+	export type Type = AiProvider.LanguageModelV2 | string;
 
 	export function getProvider(model: Type): string {
 		if (typeof model === 'string') return 'vercel';
@@ -33,6 +33,7 @@ namespace ModelInput {
 		return model.modelId;
 	}
 }
+type ModelInput = ModelInput.Type;
 
 export const getModelUsageCost = Effect.fn(function* (params: {
 	model: ModelInput;
@@ -42,7 +43,9 @@ export const getModelUsageCost = Effect.fn(function* (params: {
 
 	let price = priceCache.get(cacheKey);
 	if (!price) {
-		const url = `https://raw.githubusercontent.com/sst/models.dev/refs/heads/dev/providers/${params.model.provider}/models/${params.model.modelId}.toml`;
+		const url = `https://raw.githubusercontent.com/sst/models.dev/refs/heads/dev/providers\
+/${ModelInput.getProvider(params.model)}/\
+models/${ModelInput.getModelId(params.model)}.toml`;
 
 		const result = yield* Effect.tryPromise({
 			try: async () => {
