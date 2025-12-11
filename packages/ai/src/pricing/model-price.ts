@@ -75,6 +75,8 @@ const fetchModelsDev = (model: ModelInput) =>
 /${ModelInput.getProvider(model)}/\
 models/${ModelInput.getModelId(model)}.toml`);
 		const text = yield* response.text;
+		if (response.status === 404) return null;
+
 		const parsed = yield* Effect.try({
 			try: () => toml.parse(text),
 			catch: (error) =>
