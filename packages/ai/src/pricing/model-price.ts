@@ -1,24 +1,24 @@
 import type * as AiProvider from '@ai-sdk/provider';
+import { HttpClient } from '@effect/platform';
 import type * as Ai from 'ai';
-import { Effect } from 'effect';
+import { Effect, Schema } from 'effect';
 import * as toml from 'smol-toml';
 
-type ModelPrice = {
-	input: number;
-	output: number;
-	cacheRead?: number;
-	cacheWrite?: number;
-};
+const PricePerMillion = Schema.Number.pipe(
+	Schema.brand('ff-ai/PricePerMillion'),
+);
+type PricePerMillion = typeof PricePerMillion.Type;
+
+const Usd = Schema.Number.pipe(Schema.brand('ff-ai/Usd'));
+type Usd = typeof Usd.Type;
 
 export type UsageCost = {
-	input: number;
-	output: number;
-	cacheRead?: number;
-	cacheWrite?: number;
-	total: number;
-} | null;
+	input: Usd;
+	output: Usd;
+	total: Usd;
+};
 
-const priceCache = new Map<string, ModelPrice>();
+const priceCache = new Map<string, ModelsDevData>();
 
 namespace ModelInput {
 	export type Type = AiProvider.LanguageModelV2 | string;
@@ -35,73 +35,101 @@ namespace ModelInput {
 }
 type ModelInput = ModelInput.Type;
 
+class TomlParseError extends Schema.TaggedError<TomlParseError>()(
+	'ff-ai/TomlParseError',
+	{
+		input: Schema.String,
+		error: Schema.Defect,
+	},
+) {}
+
+class ModelsDevData extends Schema.Class<ModelsDevData>('ff-ai/ModelsDevData')({
+	cost: Schema.Struct({
+		input: PricePerMillion,
+		output: PricePerMillion,
+		cache_read: Schema.optional(PricePerMillion),
+		cache_write: Schema.optional(PricePerMillion),
+	}),
+}) {
+	get input() {
+		return this.cost.input;
+	}
+
+	get output() {
+		return this.cost.output;
+	}
+
+	get cacheRead() {
+		return this.cost.cache_read;
+	}
+
+	get cacheWrite() {
+		return this.cost.cache_write;
+	}
+}
+
+const fetchModelsDev = (model: ModelInput) =>
+	Effect.gen(function* () {
+		const response =
+			yield* HttpClient.get(`https://raw.githubusercontent.com/sst/models.dev/refs/heads/dev/providers\
+/${ModelInput.getProvider(model)}/\
+models/${ModelInput.getModelId(model)}.toml`);
+		const text = yield* response.text;
+		const parsed = yield* Effect.try({
+			try: () => toml.parse(text),
+			catch: (error) =>
+				TomlParseError.make({
+					input: text,
+					error: error,
+				}),
+		});
+		return yield* Schema.decodeUnknown(ModelsDevData)(parsed);
+	});
+
+const calcCost = (token: number, pricePerMillion: PricePerMillion) =>
+	Usd.make((token * pricePerMillion) / 1_000_000);
+
 export const getModelUsageCost = Effect.fn(function* (params: {
 	model: ModelInput;
 	usage: Ai.LanguageModelUsage;
 }) {
 	const cacheKey = `${ModelInput.getProvider(params.model)}/${ModelInput.getModelId(params.model)}`;
 
-	let price = priceCache.get(cacheKey);
-	if (!price) {
-		const url = `https://raw.githubusercontent.com/sst/models.dev/refs/heads/dev/providers\
-/${ModelInput.getProvider(params.model)}/\
-models/${ModelInput.getModelId(params.model)}.toml`;
+	const price =
+		priceCache.get(cacheKey) ??
+		(yield* Effect.gen(function* () {
+			const result = yield* fetchModelsDev(params.model);
 
-		const result = yield* Effect.tryPromise({
-			try: async () => {
-				const response = await fetch(url);
-				if (!response.ok) return null;
-				const text = await response.text();
-				const data = toml.parse(text) as {
-					cost: {
-						input: number;
-						output: number;
-						cache_read?: number;
-						cache_write?: number;
-					};
-				};
-				return {
-					input: data.cost.input,
-					output: data.cost.output,
-					cacheRead: data.cost.cache_read,
-					cacheWrite: data.cost.cache_write,
-				};
-			},
-			catch: () => null,
-		});
-
-		if (result == null) return null;
-		price = result;
-		priceCache.set(cacheKey, price);
-	}
+			if (result == null) return null;
+			priceCache.set(cacheKey, result);
+			return result;
+		}));
+	if (price == null) return null;
 
 	const usage = params.usage;
-	const inputTokens = usage.inputTokens ?? 0;
-	const outputTokens = usage.outputTokens ?? 0;
-	const inputCost = (inputTokens / 1_000_000) * price.input;
-	const outputCost = (outputTokens / 1_000_000) * price.output;
 
-	const cost: Exclude<UsageCost, null> = {
+	const inputCost = (() => {
+		if (usage.inputTokens == null) return Usd.make(0);
+		if (price.cacheRead != null && usage.cachedInputTokens != null) {
+			const freshInputTokens = usage.inputTokens - usage.cachedInputTokens;
+			return Usd.make(
+				calcCost(usage.cachedInputTokens, price.cacheRead) +
+					calcCost(freshInputTokens, price.input),
+			);
+		}
+		return calcCost(usage.inputTokens, price.input);
+	})();
+
+	const outputCost = (() => {
+		if (usage.outputTokens == null) return Usd.make(0);
+		return calcCost(usage.outputTokens, price.output);
+	})();
+
+	const cost: UsageCost = {
 		input: inputCost,
 		output: outputCost,
-		total: inputCost + outputCost,
+		total: Usd.make(inputCost + outputCost),
 	};
-
-	if (price.cacheRead != null) {
-		const cacheReadTokens = (usage as any).cacheReadTokens;
-		if (cacheReadTokens != null) {
-			cost.cacheRead = (cacheReadTokens / 1_000_000) * price.cacheRead;
-			cost.total += cost.cacheRead;
-		}
-	}
-
-	if (price.cacheWrite != null) {
-		const cacheWriteTokens = (usage as any).cacheCreationInputTokens;
-		if (cacheWriteTokens != null) {
-			cost.cacheWrite = (cacheWriteTokens / 1_000_000) * price.cacheWrite;
-			cost.total += cost.cacheWrite;
-		}
-	}
 
 	return cost;
 });
