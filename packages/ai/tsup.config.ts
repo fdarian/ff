@@ -9,9 +9,11 @@ export default defineConfig({
 	clean: true,
 	external: [
 		'@ai-sdk/valibot',
+		'@ai-sdk/provider',
 		'ai',
 		'drizzle-orm',
 		'effect',
+		'@effect/platform',
 		'postgres',
 		'valibot',
 	],
