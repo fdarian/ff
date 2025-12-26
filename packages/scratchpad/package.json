@@ -5,10 +5,13 @@
 	"dependencies": {
 		"@ai-sdk/google": "^2.0.45",
 		"@ai-sdk/xai": "^2.0.31",
+		"@effect/opentelemetry": "^0.60.0",
 		"@effect/platform": "^0.93.6",
+		"@opentelemetry/sdk-trace-base": "^2.2.0",
 		"ai": "^5.0.89",
 		"effect": "^3.19.3",
 		"ff-ai": "workspace:*",
+		"ff-serv": "workspace:*",
 		"postgres": "^3.4.7"
 	},
 	"devDependencies": {
