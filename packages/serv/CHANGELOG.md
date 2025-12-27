@@ -1,5 +1,11 @@
 # ff-serv
 
+## 0.1.1
+
+### Patch Changes
+
+- ac8ad10: Prevent logger FiberRef leak in nested replaceChild
+
 ## 0.1.0
 
 ### Minor Changes
