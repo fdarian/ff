@@ -231,11 +231,11 @@ export namespace Logger {
 				const pinoCtx = PinoCtx.create(pino);
 
 				return yield* Effect.provide(
-					e,
-					Layer.mergeAll(
+					Effect.provide(
+						e,
 						EffectLogger.replace(oldPinoCtx.effectLogger, pinoCtx.effectLogger),
-						Layer.succeed(Pino, pinoCtx),
 					),
+					Layer.succeed(Pino, pinoCtx),
 				);
 			});
 

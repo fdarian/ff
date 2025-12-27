@@ -7,6 +7,7 @@
 		"@ai-sdk/xai": "^2.0.31",
 		"@effect/opentelemetry": "^0.60.0",
 		"@effect/platform": "^0.93.6",
+		"@opentelemetry/exporter-trace-otlp-http": "^0.208.0",
 		"@opentelemetry/sdk-trace-base": "^2.2.0",
 		"ai": "^5.0.89",
 		"effect": "^3.19.3",
