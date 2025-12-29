@@ -5,7 +5,7 @@ import { runPromiseUnwrapped } from '../../run-promise-unwrapped';
 export namespace FfOrpcCtx {
 	const TAG = 'ff-orpc';
 
-	function create<R>(input: {
+	export function create<R>(input: {
 		runEffect: <A = unknown, E = unknown>(
 			effect: Effect.Effect<A, E, R>,
 		) => Promise<A>;
