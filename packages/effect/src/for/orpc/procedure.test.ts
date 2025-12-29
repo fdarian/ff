@@ -7,9 +7,9 @@ import { createHandler } from './procedure.js';
 
 class Deps extends Effect.Service<Deps>()('deps', {
 	effect: Effect.gen(function* () {
-		return {
+		return yield* Effect.succeed({
 			value: 'world',
-		};
+		});
 	}),
 }) {}
 
