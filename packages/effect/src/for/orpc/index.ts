@@ -1,3 +1,3 @@
-import { createHandler } from './procedure';
+import { createHandler, FfOrpcCtx } from './procedure';
 
-export { createHandler };
+export { createHandler, FfOrpcCtx };
