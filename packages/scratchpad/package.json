@@ -9,6 +9,7 @@
 		"@effect/platform": "^0.93.6",
 		"@opentelemetry/exporter-trace-otlp-http": "^0.208.0",
 		"@opentelemetry/sdk-trace-base": "^2.2.0",
+		"@orpc/server": "^1.13.1",
 		"ai": "^5.0.89",
 		"effect": "^3.19.3",
 		"ff-ai": "workspace:*",
