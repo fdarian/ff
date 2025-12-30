@@ -54,7 +54,7 @@ type SimpleBuilder<INPUT, OUTPUT, IMPLEMENTED_HANDLER> = {
  * ```
  **/
 export function createHandler<
-	OPT extends { context: { ff?: FfOrpcCtx<never> } },
+	OPT extends { context: Record<string, unknown> },
 	OUTPUT,
 	IMPLEMENTED_HANDLER,
 	R,
