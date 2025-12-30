@@ -1,5 +1,11 @@
 # ff-serv
 
+## 0.1.2
+
+### Patch Changes
+
+- 8f772d6: Remove default as it unintentionally replace the logger globally
+
 ## 0.1.1
 
 ### Patch Changes
