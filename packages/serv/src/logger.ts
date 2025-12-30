@@ -178,8 +178,6 @@ export namespace Logger {
 			),
 		);
 
-	export const Default = layer();
-
 	//
 
 	export const sync = () =>
