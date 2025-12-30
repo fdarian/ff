@@ -1,6 +1,6 @@
 import { call, os } from '@orpc/server';
 import { Effect, Schema } from 'effect';
-import { createHandler } from 'ff-effect/for/orpc';
+import { createHandler, FfOrpcCtx } from 'ff-effect/for/orpc';
 
 console.log(
 	await call(
@@ -22,7 +22,13 @@ console.log(
 
 function createContext() {
 	return {
-		runEffect: Effect.runPromise,
+		asdf: 1,
+		ff: FfOrpcCtx.create({
+			runEffect: async <A, E>(e: Effect.Effect<A, E>) => {
+				console.log('Using custom runEffect');
+				return Effect.runPromise(e as Effect.Effect<A, E>);
+			},
+		}),
 	};
 }
 type Context = ReturnType<typeof createContext>;
