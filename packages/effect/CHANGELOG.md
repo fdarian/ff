@@ -1,5 +1,11 @@
 # ff-effect
 
+## 0.0.6
+
+### Patch Changes
+
+- b099de7: Fix type too-strict on arbitrary context
+
 ## 0.0.5
 
 ### Patch Changes
