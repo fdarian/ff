@@ -1,5 +1,5 @@
-import { Effect } from 'effect';
-import { expect, test } from 'vitest';
+import { Data, Effect } from 'effect';
+import { describe, expect, test } from 'vitest';
 import { wrapClient } from './wrap-client.js';
 
 class TestError extends Error {
@@ -28,60 +28,87 @@ test('resolves successfully', () =>
 		expect(result).toBe('test-value');
 	}).pipe(Effect.runPromise));
 
-test('rejects without message when no overrides provided', () =>
-	Effect.gen(function* () {
-		const client: TestClient = { value: 'test-value' };
-		const wrap = wrapClient({
-			client,
-			error: ({ cause, message }) => new TestError(cause, message),
-		});
+describe('rejects', () => {
+	test('default - rejects without message when no overrides provided', () =>
+		Effect.gen(function* () {
+			const client: TestClient = { value: 'test-value' };
+			const wrap = wrapClient({
+				client,
+				error: ({ cause, message }) => new TestError(cause, message),
+			});
 
-		const causedBy = new Error('original error');
-		const effect = wrap(() => Promise.reject(causedBy));
+			const causedBy = new Error('original error');
+			const effect = wrap(() => Promise.reject(causedBy));
 
-		const result = yield* Effect.flip(effect);
+			const result = yield* Effect.flip(effect);
 
-		expect(result).toBeInstanceOf(TestError);
-		expect(result._cause).toBe(causedBy);
-		expect(result._message).toBeUndefined();
-	}).pipe(Effect.runPromise));
+			expect(result).toBeInstanceOf(TestError);
+			expect(result._cause).toBe(causedBy);
+			expect(result._message).toBeUndefined();
+		}).pipe(Effect.runPromise));
 
-test('rejects with string override', () =>
-	Effect.gen(function* () {
-		const client: TestClient = { value: 'test-value' };
-		const wrap = wrapClient({
-			client,
-			error: ({ cause, message }) => new TestError(cause, message),
-		});
+	test('errorHandler override', () =>
+		Effect.gen(function* () {
+			class CustomError extends Data.TaggedError('CustomError')<{
+				cause: unknown;
+			}> {}
 
-		const causedBy = new Error('original error');
-		const effect = wrap(() => Promise.reject(causedBy), {
-			error: 'custom message',
-		});
+			const client: TestClient = { value: 'test-value' };
+			const wrap = wrapClient({
+				client,
+				error: ({ cause, message }) => new TestError(cause, message),
+			});
 
-		const result = yield* Effect.flip(effect);
+			const causedBy = new Error('original error');
+			const effect = wrap(() => Promise.reject(causedBy), {
+				errorHandler: (cause) => new CustomError({ cause }),
+			});
 
-		expect(result).toBeInstanceOf(TestError);
-		expect(result._cause).toBe(causedBy);
-		expect(result._message).toBe('custom message');
-	}).pipe(Effect.runPromise));
+			const result = yield* Effect.flip(effect);
 
-test('rejects with function override', () =>
-	Effect.gen(function* () {
-		const client: TestClient = { value: 'test-value' };
-		const wrap = wrapClient({
-			client,
-			error: ({ cause, message }) => new TestError(cause, message),
-		});
+			expect(result).toBeInstanceOf(CustomError);
+			expect(result.cause).toBe(causedBy);
+		}).pipe(Effect.runPromise));
 
-		const causedBy = new Error('original error');
-		const effect = wrap(() => Promise.reject(causedBy), {
-			error: (cause) => `Error: ${(cause as Error).message}`,
-		});
+	describe('errorMessage override', () => {
+		test('string', () =>
+			Effect.gen(function* () {
+				const client: TestClient = { value: 'test-value' };
+				const wrap = wrapClient({
+					client,
+					error: ({ cause, message }) => new TestError(cause, message),
+				});
 
-		const result = yield* Effect.flip(effect);
+				const causedBy = new Error('original error');
+				const effect = wrap(() => Promise.reject(causedBy), {
+					errorMessage: 'custom message',
+				});
 
-		expect(result).toBeInstanceOf(TestError);
-		expect(result._cause).toBe(causedBy);
-		expect(result._message).toBe('Error: original error');
-	}).pipe(Effect.runPromise));
+				const result = yield* Effect.flip(effect);
+
+				expect(result).toBeInstanceOf(TestError);
+				expect(result._cause).toBe(causedBy);
+				expect(result._message).toBe('custom message');
+			}).pipe(Effect.runPromise));
+
+		test('handler', () =>
+			Effect.gen(function* () {
+				const client: TestClient = { value: 'test-value' };
+				const wrap = wrapClient({
+					client,
+					error: ({ cause, message }) => new TestError(cause, message),
+				});
+
+				const causedBy = new Error('original error');
+				const effect = wrap(() => Promise.reject(causedBy), {
+					errorMessage: (cause) => `Error: ${(cause as Error).message}`,
+				});
+
+				const result = yield* Effect.flip(effect);
+
+				expect(result).toBeInstanceOf(TestError);
+				expect(result._cause).toBe(causedBy);
+				expect(result._message).toBe('Error: original error');
+			}).pipe(Effect.runPromise));
+	});
+});
