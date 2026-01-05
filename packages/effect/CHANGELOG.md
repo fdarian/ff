@@ -1,5 +1,11 @@
 # ff-effect
 
+## 0.0.7
+
+### Patch Changes
+
+- ccb9584: Allow overriding error handler per-call
+
 ## 0.0.6
 
 ### Patch Changes
