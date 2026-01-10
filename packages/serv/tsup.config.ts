@@ -7,5 +7,5 @@ export default defineConfig({
 	splitting: false,
 	sourcemap: true,
 	clean: true,
-	external: ['effect', 'pino', '@effect/opentelemetry'],
+	external: ['effect', 'pino', '@effect/opentelemetry', 'get-port'],
 });

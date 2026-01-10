@@ -9,10 +9,7 @@
 			"require": "./dist/index.cjs"
 		}
 	},
-	"files": [
-		"dist",
-		"src"
-	],
+	"files": ["dist", "src"],
 	"scripts": {
 		"build": "tsup",
 		"test": "vitest run",
@@ -26,7 +23,8 @@
 	"peerDependencies": {
 		"effect": "^3.19.3",
 		"pino": "^9",
-		"@effect/opentelemetry": "^0.60.0"
+		"@effect/opentelemetry": "^0.60.0",
+		"get-port": "^7"
 	},
 	"publishConfig": {
 		"access": "public"
@@ -39,9 +37,5 @@
 	"bugs": {
 		"url": "https://github.com/fdarian/ff/issues"
 	},
-	"keywords": [
-		"effect",
-		"server",
-		"service"
-	]
+	"keywords": ["effect", "server", "service"]
 }
