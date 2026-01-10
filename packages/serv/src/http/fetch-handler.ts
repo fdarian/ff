@@ -1,6 +1,9 @@
 import { Effect, FiberSet } from 'effect';
+import type { UnknownException } from 'effect/Cause';
 import { nanoid } from 'nanoid';
 import { Logger } from '../logger.js';
+
+// #region Handler
 
 type AnyResponse = Response | Promise<Response>;
 
@@ -14,40 +17,27 @@ export type HandlerResult =
 			response: undefined;
 	  };
 
-export type Handler<T extends string = string, R = never> = {
-	_tag: T;
-	handle: (opt: { url: URL; request: Request }) => Effect.Effect<
-		HandlerResult,
-		// Any error here will be catched
-		unknown,
-		R
-	>;
-};
-
-export function buildHandler<T extends string, R>(
-	name: T,
-	handle: (opt: {
-		url: URL;
-		request: Request;
-	}) => Effect.Effect<HandlerResult, unknown, R>,
-) {
-	return {
-		_tag: name,
-		handle: handle,
-	};
+export class Handler<NAME extends string, R> {
+	constructor(
+		readonly _tag: NAME,
+		readonly handle: (opt: {
+			url: URL;
+			request: Request;
+		}) => Effect.Effect<HandlerResult, unknown, R>,
+	) {}
 }
 
-namespace HandlerPath {
-	export type Type = string | ((url: URL) => boolean);
-	export function matched(path: Type, url: URL) {
-		return typeof path === 'function' ? path(url) : path === url.pathname;
+// #endregion
+
+namespace BasicHandler {
+	export namespace Path {
+		export type Type = string | ((url: URL) => boolean);
+		export function matched(path: Type, url: URL) {
+			return typeof path === 'function' ? path(url) : path === url.pathname;
+		}
 	}
-}
 
-namespace BasicHandler_Handler {
-	export type Input<R> = (
-		request: Request,
-	) => AnyResponse | Effect.Effect<AnyResponse, unknown, R>;
+	export type EffectResult<R> = Effect.Effect<AnyResponse, unknown, R>;
 
 	export function parseResponse<E, R>(
 		result: AnyResponse | Effect.Effect<AnyResponse, E, R>,
@@ -59,32 +49,48 @@ namespace BasicHandler_Handler {
 	}
 }
 
-export function basicHandler<R = never>(
-	path: HandlerPath.Type,
-	handler: BasicHandler_Handler.Input<R>,
+export function basicHandler(
+	path: BasicHandler.Path.Type,
+	handler: (request: Request) => AnyResponse,
+): Handler<'basicHandler', never>;
+export function basicHandler<R>(
+	path: BasicHandler.Path.Type,
+	handler: (request: Request) => BasicHandler.EffectResult<R>,
+): Handler<'basicHandler', R>;
+export function basicHandler<R>(
+	path: BasicHandler.Path.Type,
+	handler: (request: Request) => AnyResponse | BasicHandler.EffectResult<R>,
 ) {
-	return buildHandler('basicHandler', ({ url, request }) =>
+	return new Handler('basicHandler', ({ url, request }) =>
 		Effect.gen(function* () {
-			if (!HandlerPath.matched(path, url))
+			if (!BasicHandler.Path.matched(path, url))
 				return { matched: false, response: undefined };
 
 			const response = handler(request);
 			return {
 				matched: true,
-				response: yield* BasicHandler_Handler.parseResponse(response),
+				response: yield* BasicHandler.parseResponse(response),
 			};
 		}),
 	);
 }
 
-export const createFetchHandler = (
-	handlers?: Handler | [Handler, ...Array<Handler>],
+type ExtractRequirements<T> = T extends Handler<string, infer R> ? R : never;
+
+export const createFetchHandler = <
+	const HANDLERS extends [
+		Handler<string, unknown>,
+		...Array<Handler<string, unknown>>,
+	],
+	R = ExtractRequirements<HANDLERS[number]>,
+>(
+	handlers: HANDLERS,
 	opts?: {
 		debug?: boolean;
 	},
 ) =>
 	Effect.gen(function* () {
-		const runFork = yield* FiberSet.makeRuntimePromise();
+		const runFork = yield* FiberSet.makeRuntimePromise<R>();
 		return async (request: Request) => {
 			const urlObj = new URL(request.url);
 			const requestId = nanoid(6);
@@ -95,7 +101,7 @@ export const createFetchHandler = (
 					'Request started',
 				);
 
-				for (const handler of Array.isArray(handlers) ? handlers : [handlers]) {
+				for (const handler of handlers) {
 					if (!handler) continue;
 
 					const result = yield* handler.handle({ url: urlObj, request }).pipe(
@@ -140,7 +146,7 @@ export const createFetchHandler = (
 				Effect.withSpan('http'),
 				Effect.annotateLogs({ requestId }),
 				Effect.scoped,
-			);
+			) as Effect.Effect<Response, UnknownException, R>;
 
 			return runFork(effect);
 		};
