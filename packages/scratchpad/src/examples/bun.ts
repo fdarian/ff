@@ -6,13 +6,8 @@ import { RPCLink } from '@orpc/client/fetch';
 import { os, type RouterClient } from '@orpc/server';
 import { RPCHandler } from '@orpc/server/fetch';
 import { Deferred, Effect, Logger as EffectLogger, Fiber, Layer } from 'effect';
-import {
-	basicHandler,
-	createFetchHandler,
-	getPort,
-	Logger,
-	oRPCHandler,
-} from 'ff-serv';
+import { basicHandler, createFetchHandler, getPort, Logger } from 'ff-serv';
+import { oRPCHandler } from 'ff-serv/orpc';
 import { runTester } from '../utils/run-tester.js';
 
 function runServerTester<
