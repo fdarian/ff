@@ -98,7 +98,7 @@ layer(Layer.mergeAll(FetchHttpClient.layer, Dummy.Default))((it) => {
 				Effect.gen(function* () {
 					const call = (path: string) =>
 						HttpClient.get(`http://localhost:${server.port}${path}`).pipe(
-							Effect.map((e) => e.text),
+							Effect.flatMap((e) => e.text),
 						);
 
 					expect(yield* call('/one')).toEqual('ok');
