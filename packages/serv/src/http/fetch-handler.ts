@@ -2,38 +2,79 @@ import { Effect, FiberSet } from 'effect';
 import { nanoid } from 'nanoid';
 import { Logger } from '../logger.js';
 
+type AnyResponse = Response | Promise<Response>;
+
 export type HandlerResult =
 	| {
 			matched: true;
-			response: Response | Promise<Response>;
+			response: AnyResponse;
 	  }
 	| {
 			matched: false;
 			response: undefined;
 	  };
 
-export type Handler<T extends string = string> = {
+export type Handler<T extends string = string, R = never> = {
 	_tag: T;
+	handle: (opt: { url: URL; request: Request }) => Effect.Effect<
+		HandlerResult,
+		// Any error here will be catched
+		unknown,
+		R
+	>;
+};
+
+export function buildHandler<T extends string, R>(
+	name: T,
 	handle: (opt: {
 		url: URL;
 		request: Request;
-	}) => HandlerResult | Promise<HandlerResult>;
-};
-
-export function basicHandler(
-	path: string | ((url: URL) => boolean),
-	handler: (request: Request) => Response | Promise<Response>,
-): Handler<'basicHandler'> {
+	}) => Effect.Effect<HandlerResult, unknown, R>,
+) {
 	return {
-		_tag: 'basicHandler',
-		handle: ({ url, request }) => {
-			const matched =
-				typeof path === 'function' ? path(url) : path === url.pathname;
-			if (!matched) return { matched: false, response: undefined };
-
-			return { matched: true, response: handler(request) };
-		},
+		_tag: name,
+		handle: handle,
 	};
+}
+
+namespace HandlerPath {
+	export type Type = string | ((url: URL) => boolean);
+	export function matched(path: Type, url: URL) {
+		return typeof path === 'function' ? path(url) : path === url.pathname;
+	}
+}
+
+namespace BasicHandler_Handler {
+	export type Input<R> = (
+		request: Request,
+	) => AnyResponse | Effect.Effect<AnyResponse, unknown, R>;
+
+	export function parseResponse<E, R>(
+		result: AnyResponse | Effect.Effect<AnyResponse, E, R>,
+	): Effect.Effect<AnyResponse, E, R> {
+		return Effect.gen(function* () {
+			if (!Effect.isEffect(result)) return result;
+			return yield* result;
+		});
+	}
+}
+
+export function basicHandler<R = never>(
+	path: HandlerPath.Type,
+	handler: BasicHandler_Handler.Input<R>,
+) {
+	return buildHandler('basicHandler', ({ url, request }) =>
+		Effect.gen(function* () {
+			if (!HandlerPath.matched(path, url))
+				return { matched: false, response: undefined };
+
+			const response = handler(request);
+			return {
+				matched: true,
+				response: yield* BasicHandler_Handler.parseResponse(response),
+			};
+		}),
+	);
 }
 
 export const createFetchHandler = (
@@ -57,11 +98,22 @@ export const createFetchHandler = (
 				for (const handler of Array.isArray(handlers) ? handlers : [handlers]) {
 					if (!handler) continue;
 
-					const maybeResult = handler.handle({ url: urlObj, request });
-					const result =
-						maybeResult instanceof Promise
-							? yield* Effect.tryPromise(() => maybeResult)
-							: maybeResult;
+					const result = yield* handler.handle({ url: urlObj, request }).pipe(
+						Effect.catchAllCause((error) =>
+							Effect.gen(function* () {
+								yield* Logger.error(
+									{ error },
+									`Unhandled exception in HTTP handler '${handler._tag}'`,
+								);
+								return {
+									matched: true,
+									response: new Response('Internal Server Error', {
+										status: 500,
+									}),
+								} as HandlerResult;
+							}),
+						),
+					);
 
 					if (opts?.debug)
 						yield* Logger.debug(
@@ -84,17 +136,6 @@ export const createFetchHandler = (
 					response.ok
 						? Logger.info(`Request completed with status ${response.status}`)
 						: Logger.warn(`Request completed with status ${response.status}`),
-				),
-				Effect.catchAll((error) =>
-					Effect.gen(function* () {
-						yield* Logger.error(
-							{ error },
-							'Unhandled exception in HTTP handler',
-						);
-						return new Response('Internal Server Error', {
-							status: 500,
-						});
-					}),
 				),
 				Effect.withSpan('http'),
 				Effect.annotateLogs({ requestId }),
