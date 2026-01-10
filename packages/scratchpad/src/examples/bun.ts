@@ -5,7 +5,14 @@ import { createORPCClient } from '@orpc/client';
 import { RPCLink } from '@orpc/client/fetch';
 import { os, type RouterClient } from '@orpc/server';
 import { RPCHandler } from '@orpc/server/fetch';
-import { Deferred, Effect, Logger as EffectLogger, Fiber, Layer } from 'effect';
+import {
+	Deferred,
+	Effect,
+	Logger as EffectLogger,
+	Fiber,
+	Layer,
+	LogLevel,
+} from 'effect';
 import { basicHandler, createFetchHandler, getPort, Logger } from 'ff-serv';
 import { oRPCHandler } from 'ff-serv/orpc';
 import { runTester } from '../utils/run-tester.js';
@@ -83,7 +90,9 @@ runTester({
 			server: ({ port }) =>
 				Effect.gen(function* () {
 					const router = {
-						health: os.handler(() => 'also ok'),
+						rpc: {
+							health: os.handler(() => 'also ok'),
+						},
 					};
 					const handler = new RPCHandler(router);
 					return {
@@ -111,10 +120,10 @@ runTester({
 					);
 
 					assert.strictEqual(
-						yield* Effect.promise(async () => orpcClient.health()),
+						yield* Effect.promise(async () => orpcClient.rpc.health()),
 						'also ok',
 					);
 				}),
 		});
-	}).pipe(Effect.scoped),
+	}).pipe(Effect.scoped, EffectLogger.withMinimumLogLevel(LogLevel.Debug)),
 });
