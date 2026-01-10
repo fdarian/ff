@@ -37,7 +37,7 @@ it.effect('e2e', () =>
 					error: ({ cause }) => new UnknownException(cause),
 				});
 
-				expect(yield* call((client) => client.health()), 'ok');
+				expect(yield* call((client) => client.health())).toEqual('ok');
 			}),
 	}),
 );

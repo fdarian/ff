@@ -101,9 +101,9 @@ layer(Layer.mergeAll(FetchHttpClient.layer, Dummy.Default))((it) => {
 							Effect.map((e) => e.text),
 						);
 
-					expect(yield* call('/one'), 'ok');
-					expect(yield* call('/two'), 'ok-effect');
-					expect(yield* call('/three'), 'ok-service');
+					expect(yield* call('/one')).toEqual('ok');
+					expect(yield* call('/two')).toEqual('ok-effect');
+					expect(yield* call('/three')).toEqual('ok-service');
 				}),
 		}),
 	);
