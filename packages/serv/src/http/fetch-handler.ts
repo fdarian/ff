@@ -12,26 +12,35 @@ export type HandlerResult =
 			response: undefined;
 	  };
 
-export type Handler = (opt: {
-	url: URL;
-	request: Request;
-}) => HandlerResult | Promise<HandlerResult>;
+export type Handler<T extends string = string> = {
+	_tag: T;
+	handle: (opt: {
+		url: URL;
+		request: Request;
+	}) => HandlerResult | Promise<HandlerResult>;
+};
 
 export function basicHandler(
 	path: string | ((url: URL) => boolean),
 	handler: (request: Request) => Response | Promise<Response>,
-): Handler {
-	return ({ url, request }) => {
-		const matched =
-			typeof path === 'function' ? path(url) : path === url.pathname;
-		if (!matched) return { matched: false, response: undefined };
+): Handler<'basicHandler'> {
+	return {
+		_tag: 'basicHandler',
+		handle: ({ url, request }) => {
+			const matched =
+				typeof path === 'function' ? path(url) : path === url.pathname;
+			if (!matched) return { matched: false, response: undefined };
 
-		return { matched: true, response: handler(request) };
+			return { matched: true, response: handler(request) };
+		},
 	};
 }
 
 export const createFetchHandler = (
 	handlers?: Handler | [Handler, ...Array<Handler>],
+	opts?: {
+		debug?: boolean;
+	},
 ) =>
 	Effect.gen(function* () {
 		const runFork = yield* FiberSet.makeRuntimePromise();
@@ -48,11 +57,18 @@ export const createFetchHandler = (
 				for (const handler of Array.isArray(handlers) ? handlers : [handlers]) {
 					if (!handler) continue;
 
-					const maybeResult = handler({ url: urlObj, request });
+					const maybeResult = handler.handle({ url: urlObj, request });
 					const result =
 						maybeResult instanceof Promise
 							? yield* Effect.tryPromise(() => maybeResult)
 							: maybeResult;
+
+					if (opts?.debug)
+						yield* Logger.debug(
+							{ handler: handler._tag, request, result },
+							'Processed handler',
+						);
+
 					if (!result.matched) continue;
 					return result.response;
 				}
