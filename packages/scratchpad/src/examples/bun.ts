@@ -60,6 +60,15 @@ function runServerTester<
 	});
 }
 
+const DUMMY_MSG = 'supersecret';
+export class Dummy extends Effect.Service<Dummy>()('dummy', {
+	sync: () => ({ message: DUMMY_MSG }),
+}) {}
+
+export class Dummy2 extends Effect.Service<Dummy2>()('dummy2', {
+	sync: () => ({ message: DUMMY_MSG }),
+}) {}
+
 runTester({
 	dependencies: Layer.mergeAll(FetchHttpClient.layer, EffectLogger.pretty),
 	effect: Effect.gen(function* () {
@@ -69,9 +78,9 @@ runTester({
 					return {
 						server: Bun.serve({
 							port: port,
-							fetch: yield* createFetchHandler(
+							fetch: yield* createFetchHandler([
 								basicHandler('/health', () => new Response('ok')),
-							),
+							]),
 						}),
 					};
 				}),
@@ -100,20 +109,44 @@ runTester({
 						server: Bun.serve({
 							port: port,
 							fetch: yield* createFetchHandler([
-								basicHandler('/health', () => new Response('ok')),
+								basicHandler('/message', () =>
+									Effect.gen(function* () {
+										const svc = yield* Dummy;
+										return new Response(svc.message);
+									}),
+								),
+								basicHandler('/message-2', () =>
+									Effect.gen(function* () {
+										const svc = yield* Dummy2;
+										return new Response(svc.message);
+									}),
+								),
 								oRPCHandler(handler),
 							]),
 						}),
 					};
-				}),
+				}).pipe(
+					(e) => e,
+					// Effect.provide(Dummy.Default), // using this should throw type error
+					Effect.provide(Layer.mergeAll(Dummy.Default, Dummy2.Default)),
+				),
 			test: ({ router, server }) =>
 				Effect.gen(function* () {
-					const client = yield* HttpClient;
-					const response = yield* client.get(
-						`http://localhost:${server.port}/health`,
-					);
+					const http = yield* HttpClient;
 
-					assert.strictEqual(yield* response.text, 'ok');
+					yield* Effect.gen(function* () {
+						const response = yield* http.get(
+							`http://localhost:${server.port}/message`,
+						);
+						assert.strictEqual(yield* response.text, DUMMY_MSG);
+					});
+
+					yield* Effect.gen(function* () {
+						const response = yield* http.get(
+							`http://localhost:${server.port}/message-2`,
+						);
+						assert.strictEqual(yield* response.text, DUMMY_MSG);
+					});
 
 					const orpcClient: RouterClient<typeof router> = createORPCClient(
 						new RPCLink({ url: `http://localhost:${server.port}` }),
@@ -124,6 +157,10 @@ runTester({
 						'also ok',
 					);
 				}),
-		});
-	}).pipe(Effect.scoped, EffectLogger.withMinimumLogLevel(LogLevel.Debug)),
+		}).pipe((e) => e);
+	}).pipe(
+		(e) => e,
+		Effect.scoped,
+		EffectLogger.withMinimumLogLevel(LogLevel.Debug),
+	),
 });

@@ -1,49 +1,53 @@
 import { Effect, FiberSet } from 'effect';
+import type { Cause } from 'effect/Cause';
 import { nanoid } from 'nanoid';
 import { Logger } from '../logger.js';
+
+// #region Handler
+
+export type AnyResponse = Response | Promise<Response>;
 
 export type HandlerResult =
 	| {
 			matched: true;
-			response: Response | Promise<Response>;
+			response: AnyResponse;
 	  }
 	| {
 			matched: false;
 			response: undefined;
 	  };
 
-export type Handler<T extends string = string> = {
-	_tag: T;
-	handle: (opt: {
-		url: URL;
-		request: Request;
-	}) => HandlerResult | Promise<HandlerResult>;
-};
-
-export function basicHandler(
-	path: string | ((url: URL) => boolean),
-	handler: (request: Request) => Response | Promise<Response>,
-): Handler<'basicHandler'> {
-	return {
-		_tag: 'basicHandler',
-		handle: ({ url, request }) => {
-			const matched =
-				typeof path === 'function' ? path(url) : path === url.pathname;
-			if (!matched) return { matched: false, response: undefined };
-
-			return { matched: true, response: handler(request) };
-		},
-	};
+export class Handler<NAME extends string, R> {
+	constructor(
+		readonly _tag: NAME,
+		readonly handle: (opt: {
+			url: URL;
+			request: Request;
+		}) => Effect.Effect<HandlerResult, unknown, R>,
+	) {}
 }
 
-export const createFetchHandler = (
-	handlers?: Handler | [Handler, ...Array<Handler>],
+// #endregion
+
+type ExtractRequirements<T> = T extends Handler<string, infer R> ? R : never;
+
+export const createFetchHandler = <
+	const HANDLERS extends [
+		Handler<string, unknown>,
+		...Array<Handler<string, unknown>>,
+	],
+	R = ExtractRequirements<HANDLERS[number]>,
+>(
+	handlers: HANDLERS,
 	opts?: {
 		debug?: boolean;
+		onError?: (ctx: {
+			error: Cause<unknown>;
+		}) => Effect.Effect<unknown, unknown>;
 	},
 ) =>
 	Effect.gen(function* () {
-		const runFork = yield* FiberSet.makeRuntimePromise();
+		const runFork = yield* FiberSet.makeRuntimePromise<R>();
 		return async (request: Request) => {
 			const urlObj = new URL(request.url);
 			const requestId = nanoid(6);
@@ -54,14 +58,40 @@ export const createFetchHandler = (
 					'Request started',
 				);
 
-				for (const handler of Array.isArray(handlers) ? handlers : [handlers]) {
+				for (const handler of handlers) {
 					if (!handler) continue;
 
-					const maybeResult = handler.handle({ url: urlObj, request });
-					const result =
-						maybeResult instanceof Promise
-							? yield* Effect.tryPromise(() => maybeResult)
-							: maybeResult;
+					const result = yield* handler.handle({ url: urlObj, request }).pipe(
+						Effect.flatMap(({ matched, response }) =>
+							Effect.gen(function* () {
+								if (matched) {
+									return {
+										matched: true,
+										response:
+											response instanceof Promise
+												? yield* Effect.tryPromise(() => response)
+												: response,
+									} as const;
+								}
+								return { matched: false, response: undefined } as const;
+							}),
+						),
+						Effect.catchAllCause((error) =>
+							Effect.gen(function* () {
+								yield* Logger.error(
+									{ error },
+									`Unhandled exception in HTTP handler '${handler._tag}'`,
+								);
+								if (opts?.onError) yield* opts.onError({ error });
+								return {
+									matched: true,
+									response: new Response('Internal Server Error', {
+										status: 500,
+									}),
+								} as const;
+							}),
+						),
+					);
 
 					if (opts?.debug)
 						yield* Logger.debug(
@@ -75,31 +105,15 @@ export const createFetchHandler = (
 
 				return new Response('Not Found', { status: 404 });
 			}).pipe(
-				Effect.flatMap((response) =>
-					response instanceof Promise
-						? Effect.tryPromise(() => response)
-						: Effect.succeed(response),
-				),
 				Effect.tap((response) =>
 					response.ok
 						? Logger.info(`Request completed with status ${response.status}`)
 						: Logger.warn(`Request completed with status ${response.status}`),
 				),
-				Effect.catchAll((error) =>
-					Effect.gen(function* () {
-						yield* Logger.error(
-							{ error },
-							'Unhandled exception in HTTP handler',
-						);
-						return new Response('Internal Server Error', {
-							status: 500,
-						});
-					}),
-				),
 				Effect.withSpan('http'),
 				Effect.annotateLogs({ requestId }),
 				Effect.scoped,
-			);
+			) as Effect.Effect<Response, never, R>;
 
 			return runFork(effect);
 		};
