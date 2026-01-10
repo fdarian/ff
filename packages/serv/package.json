@@ -7,6 +7,11 @@
 			"types": "./dist/index.d.ts",
 			"import": "./dist/index.js",
 			"require": "./dist/index.cjs"
+		},
+		"./orpc": {
+			"types": "./dist/exports/orpc.d.ts",
+			"import": "./dist/exports/orpc.js",
+			"require": "./dist/exports/orpc.cjs"
 		}
 	},
 	"files": [
