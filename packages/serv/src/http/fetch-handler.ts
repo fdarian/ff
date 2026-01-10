@@ -1,11 +1,8 @@
-import type { Context } from '@orpc/server';
-import type { FetchHandler } from '@orpc/server/fetch';
-import type { FriendlyStandardHandleOptions } from '@orpc/server/standard';
 import { Effect, FiberSet } from 'effect';
 import { nanoid } from 'nanoid';
 import { Logger } from '../logger.js';
 
-type HandlerResult =
+export type HandlerResult =
 	| {
 			matched: true;
 			response: Response | Promise<Response>;
@@ -15,7 +12,7 @@ type HandlerResult =
 			response: undefined;
 	  };
 
-type Handler = (opt: {
+export type Handler = (opt: {
 	url: URL;
 	request: Request;
 }) => HandlerResult | Promise<HandlerResult>;
@@ -31,17 +28,6 @@ export function basicHandler(
 
 		return { matched: true, response: handler(request) };
 	};
-}
-
-type MaybeOptionalOptions<TOptions> = Record<never, never> extends TOptions
-	? [options?: TOptions]
-	: [options: TOptions];
-
-export function oRPCHandler<T extends Context>(
-	handler: FetchHandler<T>,
-	...rest: MaybeOptionalOptions<FriendlyStandardHandleOptions<T>>
-): Handler {
-	return async ({ request }) => handler.handle(request, ...rest);
 }
 
 export const createFetchHandler = (
