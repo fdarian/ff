@@ -1,5 +1,5 @@
 import { Effect, FiberSet } from 'effect';
-import type { UnknownException } from 'effect/Cause';
+import type { Cause, UnknownException } from 'effect/Cause';
 import { nanoid } from 'nanoid';
 import { Logger } from '../logger.js';
 
@@ -41,6 +41,9 @@ export const createFetchHandler = <
 	handlers: HANDLERS,
 	opts?: {
 		debug?: boolean;
+		onError?: (ctx: {
+			error: Cause<unknown>;
+		}) => Effect.Effect<unknown, unknown>;
 	},
 ) =>
 	Effect.gen(function* () {
@@ -65,6 +68,7 @@ export const createFetchHandler = <
 									{ error },
 									`Unhandled exception in HTTP handler '${handler._tag}'`,
 								);
+								if (opts?.onError) yield* opts.onError({ error });
 								return {
 									matched: true,
 									response: new Response('Internal Server Error', {
