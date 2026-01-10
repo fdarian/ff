@@ -1,5 +1,5 @@
 import { Effect, FiberSet } from 'effect';
-import type { Cause, UnknownException } from 'effect/Cause';
+import type { Cause } from 'effect/Cause';
 import { nanoid } from 'nanoid';
 import { Logger } from '../logger.js';
 
@@ -62,6 +62,20 @@ export const createFetchHandler = <
 					if (!handler) continue;
 
 					const result = yield* handler.handle({ url: urlObj, request }).pipe(
+						Effect.flatMap(({ matched, response }) =>
+							Effect.gen(function* () {
+								if (matched) {
+									return {
+										matched: true,
+										response:
+											response instanceof Promise
+												? yield* Effect.tryPromise(() => response)
+												: response,
+									} as const;
+								}
+								return { matched: false, response: undefined } as const;
+							}),
+						),
 						Effect.catchAllCause((error) =>
 							Effect.gen(function* () {
 								yield* Logger.error(
@@ -74,7 +88,7 @@ export const createFetchHandler = <
 									response: new Response('Internal Server Error', {
 										status: 500,
 									}),
-								} as HandlerResult;
+								} as const;
 							}),
 						),
 					);
@@ -91,11 +105,6 @@ export const createFetchHandler = <
 
 				return new Response('Not Found', { status: 404 });
 			}).pipe(
-				Effect.flatMap((response) =>
-					response instanceof Promise
-						? Effect.tryPromise(() => response)
-						: Effect.succeed(response),
-				),
 				Effect.tap((response) =>
 					response.ok
 						? Logger.info(`Request completed with status ${response.status}`)
@@ -104,7 +113,7 @@ export const createFetchHandler = <
 				Effect.withSpan('http'),
 				Effect.annotateLogs({ requestId }),
 				Effect.scoped,
-			) as Effect.Effect<Response, UnknownException, R>;
+			) as Effect.Effect<Response, never, R>;
 
 			return runFork(effect);
 		};
