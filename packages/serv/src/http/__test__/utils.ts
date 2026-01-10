@@ -39,10 +39,7 @@ export function serverTester<
 
 		const output = yield* Deferred.await(ready);
 
-		yield* opt.test(output).pipe(
-			Effect.tap(() => Logger.info('All good')),
-			Effect.catchAllDefect((error) => Logger.error({ error }, 'Failed')),
-		);
+		yield* opt.test(output);
 
 		yield* Fiber.interrupt(fiber);
 	}).pipe(Effect.scoped);
