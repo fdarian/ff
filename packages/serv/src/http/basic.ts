@@ -19,11 +19,9 @@ export namespace Fn {
 	export type FnAny<R> = (...input: Input) => OutputSync | OutputEffect<R>;
 
 	export function exec<R>(fn: FnAny<R>, ...[request]: Input) {
-		return Effect.gen(function* () {
-			const response = fn(request);
-			if (!Effect.isEffect(response)) return response;
-			return yield* response;
-		});
+		const response = fn(request);
+		if (!Effect.isEffect(response)) return Effect.succeed(response);
+		return response;
 	}
 }
 
@@ -36,15 +34,15 @@ export function basicHandler<R>(
 	fn: Fn.FnEffect<R>,
 ): Handler<'basicHandler', R>;
 export function basicHandler<R>(path: Path.Type, fn: Fn.FnAny<R>) {
-	return new Handler('basicHandler', ({ url, request }) =>
-		Effect.gen(function* () {
-			if (!Path.matched(path, url))
-				return { matched: false, response: undefined };
+	return new Handler('basicHandler', ({ url, request }) => {
+		if (!Path.matched(path, url))
+			return Effect.succeed({ matched: false, response: undefined });
 
+		return Effect.gen(function* () {
 			return {
 				matched: true,
 				response: yield* Fn.exec(fn, request),
 			};
-		}),
-	);
+		});
+	});
 }
