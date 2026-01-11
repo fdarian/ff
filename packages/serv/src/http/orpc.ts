@@ -9,11 +9,18 @@ type MaybeOptionalOptions<TOptions> =
 		? [options?: TOptions]
 		: [options: TOptions];
 
-export function oRPCHandler<T extends Context>(
+export function oRPCHandler<T extends Context, E, R>(
 	handler: FetchHandler<T>,
-	...rest: MaybeOptionalOptions<FriendlyStandardHandleOptions<T>>
+	opt?:
+		| FriendlyStandardHandleOptions<T>
+		| Effect.Effect<FriendlyStandardHandleOptions<T>, E, R>,
 ) {
 	return new Handler('oRPCHandler', ({ request }) =>
-		Effect.tryPromise(() => handler.handle(request, ...rest)),
+		Effect.gen(function* () {
+			const _opt = (
+				opt ? [Effect.isEffect(opt) ? yield* opt : opt] : []
+			) as MaybeOptionalOptions<FriendlyStandardHandleOptions<T>>;
+			return yield* Effect.tryPromise(() => handler.handle(request, ..._opt));
+		}),
 	);
 }
