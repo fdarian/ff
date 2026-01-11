@@ -1,5 +1,12 @@
 # ff-serv
 
+## 0.1.4
+
+### Patch Changes
+
+- 3c17ed3: Allow for using Effect to define oRPCHandler opts
+- 4c841a1: Support for effect in `basicHandler` and fix `R` type inference
+
 ## 0.1.3
 
 ### Patch Changes
