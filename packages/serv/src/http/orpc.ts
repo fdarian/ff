@@ -19,12 +19,14 @@ function getValue<T extends Context, E, R>(opt: PossibleOpt<T, E, R>) {
 
 export function oRPCHandler<T extends Context, E, R>(
 	handler: FetchHandler<T>,
-	opt?: PossibleOpt<T, E, R> | (() => PossibleOpt<T, E, R>),
+	opt?: PossibleOpt<T, E, R> | ((request: Request) => PossibleOpt<T, E, R>),
 ) {
 	return new Handler('oRPCHandler', ({ request }) =>
 		Effect.gen(function* () {
 			const _opt = (
-				opt ? [yield* getValue(typeof opt === 'function' ? opt() : opt)] : []
+				opt
+					? [yield* getValue(typeof opt === 'function' ? opt(request) : opt)]
+					: []
 			) as MaybeOptionalOptions<FriendlyStandardHandleOptions<T>>;
 			return yield* Effect.tryPromise(() => handler.handle(request, ..._opt));
 		}),
