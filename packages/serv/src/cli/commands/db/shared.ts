@@ -87,7 +87,7 @@ export const dumpToFile = (databaseUrl: string, filePath: string) =>
 
 export const resolveDatabaseSource = (
 	sourceConfig?: DatabaseSourceConfig,
-): Effect.Effect<DatabaseSource> =>
+): Effect.Effect<DatabaseSource, Effect.Effect.Error<typeof promptDatabaseSourceType>> =>
 	Effect.gen(function* () {
 		if (sourceConfig) {
 			if (sourceConfig.type === 'railway') {

@@ -2,7 +2,11 @@ import * as platform from '@effect/platform';
 import { Context, Effect, Layer } from 'effect';
 
 export interface DatabaseSource {
-	readonly getConnectionUrl: Effect.Effect<string, Error>;
+	readonly getConnectionUrl: Effect.Effect<
+		string,
+		Error,
+		platform.CommandExecutor.CommandExecutor
+	>;
 	readonly displayName: string;
 }
 

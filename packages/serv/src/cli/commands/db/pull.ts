@@ -1,6 +1,6 @@
 import * as cli from '@effect/cli';
 import * as platform from '@effect/platform';
-import { Effect, Option } from 'effect';
+import { Effect, Option, Cause } from 'effect';
 import inquirer from 'inquirer';
 import postgres from 'postgres';
 import { loadConfig } from '../../config/index.js';
@@ -211,10 +211,10 @@ interface DumpState {
 	downloaded: boolean;
 }
 
-const executeWithRetry = <A, E>(
-	operation: Effect.Effect<A, E>,
+const executeWithRetry = <A, E, R>(
+	operation: Effect.Effect<A, E, R>,
 	dumpState: DumpState,
-): Effect.Effect<A, E> =>
+): Effect.Effect<A, E | Cause.UnknownException, R> =>
 	Effect.catchAll(operation, (error) =>
 		Effect.gen(function* () {
 			yield* Effect.logError(`Operation failed: ${error}`);
