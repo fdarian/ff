@@ -235,8 +235,8 @@ const executeWithRetry = <A, E>(
 		}),
 	);
 
-export const pullDatabaseCommand = cli.Command.make(
-	'pull-database',
+export const pullCommand = cli.Command.make(
+	'pull',
 	{
 		fromDump: cli.Options.file('fromDump').pipe(cli.Options.optional),
 		targetDatabaseUrl: cli.Args.text({ name: 'targetDatabaseUrl' }).pipe(
