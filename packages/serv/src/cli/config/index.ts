@@ -6,44 +6,48 @@ const DEFAULT_CONFIG_PATHS = ['.ff-serv.json', 'ff-serv.config.json'];
 
 const tryLoadConfigFromPath = (
 	filePath: string,
-): Effect.Effect<FfServConfig, never, platform.FileSystem.FileSystem> =>
+): Effect.Effect<
+	Option.Option<FfServConfig>,
+	never,
+	platform.FileSystem.FileSystem
+> =>
 	Effect.gen(function* () {
 		const fs = yield* platform.FileSystem.FileSystem;
 
-		const exists = yield* fs.exists(filePath).pipe(
-			Effect.catchAll(() => Effect.succeed(false)),
-		);
+		const exists = yield* fs
+			.exists(filePath)
+			.pipe(Effect.catchAll(() => Effect.succeed(false)));
 
 		if (!exists) {
-			return Option.none();
+			return Option.none<FfServConfig>();
 		}
 
-		const content = yield* fs.readFileString(filePath).pipe(
-			Effect.catchAll(() => Effect.succeed(Option.none())),
-			Effect.flatten,
-		);
+		const contentResult = yield* fs
+			.readFileString(filePath)
+			.pipe(Effect.either);
 
-		if (Option.isNone(content)) {
-			return Option.none();
+		if (contentResult._tag === 'Left') {
+			return Option.none<FfServConfig>();
 		}
 
-		const parsed = yield* Effect.try(() =>
-			JSON.parse(content.value),
-		).pipe(Effect.catchAll(() => Effect.succeed(Option.none())));
+		const parseResult = yield* Effect.try(() =>
+			JSON.parse(contentResult.right),
+		).pipe(Effect.either);
 
-		if (Option.isNone(parsed)) {
-			return Option.none();
+		if (parseResult._tag === 'Left') {
+			return Option.none<FfServConfig>();
 		}
 
-		const validated = yield* Schema.decodeUnknown(FfServConfig)(
-			parsed,
-		).pipe(
-			Effect.catchAll(() => Effect.succeed(Option.none())),
-			Effect.map(Option.some),
-		);
+		const validateResult = yield* Schema.decodeUnknown(FfServConfig)(
+			parseResult.right,
+		).pipe(Effect.either);
 
-		return validated;
-	}).pipe(Effect.flatten);
+		if (validateResult._tag === 'Left') {
+			return Option.none<FfServConfig>();
+		}
+
+		return Option.some(validateResult.right);
+	});
 
 export const loadConfig = (
 	customConfigPath?: string,
