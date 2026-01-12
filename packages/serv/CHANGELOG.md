@@ -1,5 +1,11 @@
 # ff-serv
 
+## 0.1.7
+
+### Patch Changes
+
+- 2c2bbeb: Add allow for creating orpc handler in function
+
 ## 0.1.6
 
 ### Patch Changes
