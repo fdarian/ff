@@ -25,6 +25,7 @@ export const promptRailwayConfig = typedPrompt<{
 }>([
 	{
 		type: 'input',
+		// @ts-expect-error - expected, need better typing. Try callling it directly with inquirer.prompt, it's overload issue
 		name: 'projectId',
 		message: 'Enter Railway Project ID:',
 		validate: (input: string) =>
@@ -32,6 +33,7 @@ export const promptRailwayConfig = typedPrompt<{
 	},
 	{
 		type: 'input',
+		// @ts-expect-error - expected, need better typing. Try callling it directly with inquirer.prompt, it's overload issue
 		name: 'environmentId',
 		message: 'Enter Railway Environment ID:',
 		validate: (input: string) =>
@@ -39,6 +41,7 @@ export const promptRailwayConfig = typedPrompt<{
 	},
 	{
 		type: 'input',
+		// @ts-expect-error - expected, need better typing. Try callling it directly with inquirer.prompt, it's overload issue
 		name: 'serviceId',
 		message: 'Enter Railway Service ID:',
 		validate: (input: string) =>
