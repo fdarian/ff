@@ -23,7 +23,7 @@
 	],
 	"scripts": {
 		"build": "tsup && bun run build:cli",
-		"build:cli": "bun build src/cli/index.ts --compile --target=bun --outfile dist/cli",
+		"build:cli": "bun build src/cli/index.ts --production --target=bun --outfile dist/cli.js",
 		"test": "bun -b vitest run",
 		"dev": "tsup --watch"
 	},
