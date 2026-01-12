@@ -38,36 +38,37 @@ const parsePostgresUrl = (url: string): DatabaseInfo => {
 const confirmDatabaseUrls = (
 	sourceUrl: string | null,
 	targetUrl: string,
-) => {
-	const target = parsePostgresUrl(targetUrl);
+) =>
+	Effect.gen(function* () {
+		const target = parsePostgresUrl(targetUrl);
 
-	if (sourceUrl) {
-		const source = parsePostgresUrl(sourceUrl);
-		console.log('\n--- Source Database ---');
-		console.log(`Host: ${source.host}`);
-		console.log(`Port: ${source.port}`);
-		console.log(`Database: ${source.database}`);
-	} else {
-		console.log('\n--- Source ---');
-		console.log('Local dump file');
-	}
+		if (sourceUrl) {
+			const source = parsePostgresUrl(sourceUrl);
+			yield* Effect.log('\n--- Source Database ---');
+			yield* Effect.log(`Host: ${source.host}`);
+			yield* Effect.log(`Port: ${source.port}`);
+			yield* Effect.log(`Database: ${source.database}`);
+		} else {
+			yield* Effect.log('\n--- Source ---');
+			yield* Effect.log('Local dump file');
+		}
 
-	console.log('\n--- Target Database ---');
-	console.log(`Host: ${target.host}`);
-	console.log(`Port: ${target.port}`);
-	console.log(`Database: ${target.database}`);
+		yield* Effect.log('\n--- Target Database ---');
+		yield* Effect.log(`Host: ${target.host}`);
+		yield* Effect.log(`Port: ${target.port}`);
+		yield* Effect.log(`Database: ${target.database}`);
 
-	return Effect.tryPromise(() =>
-		inquirer.prompt([
-			{
-				type: 'confirm',
-				name: 'confirmed',
-				message: 'Are the settings correct?',
-				default: false,
-			},
-		]),
-	).pipe(Effect.map((r) => r.confirmed as boolean));
-};
+		return yield* Effect.tryPromise(() =>
+			inquirer.prompt([
+				{
+					type: 'confirm',
+					name: 'confirmed',
+					message: 'Are the settings correct?',
+					default: false,
+				},
+			]),
+		).pipe(Effect.map((r) => r.confirmed as boolean));
+	});
 
 type SchemaTableInfo = {
 	schema: string;
@@ -117,20 +118,20 @@ const confirmDatabaseReset = (databaseUrl: string) =>
 	Effect.gen(function* () {
 		const schemaInfo = yield* getSchemaTablesInfo(databaseUrl);
 
-		console.log('\nThe following will be truncated:\n');
+		yield* Effect.log('\nThe following will be truncated:\n');
 
 		for (const { schema, tables } of schemaInfo) {
 			if (tables.length === 0) {
-				console.log(`Schema: ${schema}`);
-				console.log('  (no tables)\n');
+				yield* Effect.log(`Schema: ${schema}`);
+				yield* Effect.log('  (no tables)\n');
 				continue;
 			}
 
-			console.log(`Schema: ${schema}`);
+			yield* Effect.log(`Schema: ${schema}`);
 			for (const table of tables) {
-				console.log(`  - ${table}`);
+				yield* Effect.log(`  - ${table}`);
 			}
-			console.log();
+			yield* Effect.log('');
 		}
 
 		const { shouldReset } = yield* Effect.tryPromise(() =>
@@ -251,12 +252,12 @@ export const pullCommand = cli.Command.make(
 				Option.isSome(config) ? config.value : undefined,
 			);
 
-			const targetUrl = Option.isSome(targetDatabaseUrl)
-				? targetDatabaseUrl.value
-				: Option.isSome(loadedConfig) &&
-					  loadedConfig.value.pullDatabase?.targetDatabaseUrl
-					? loadedConfig.value.pullDatabase.targetDatabaseUrl
-					: yield* promptTargetUrl(DEFAULT_TARGET_DATABASE_URL);
+			const targetUrl =
+				Option.getOrUndefined(targetDatabaseUrl) ||
+				Option.flatMap(loadedConfig, (c) =>
+					Option.fromNullable(c.pullDatabase?.targetDatabaseUrl),
+				).pipe(Option.getOrUndefined) ||
+				(yield* promptTargetUrl(DEFAULT_TARGET_DATABASE_URL));
 
 			let dumpState: DumpState;
 
@@ -274,10 +275,9 @@ export const pullCommand = cli.Command.make(
 				dumpState = { filePath: dumpPath, downloaded: false };
 
 				const source = yield* resolveDatabaseSource(
-					Option.isSome(loadedConfig) &&
-						loadedConfig.value.pullDatabase?.source
-						? loadedConfig.value.pullDatabase.source
-						: undefined,
+					Option.flatMap(loadedConfig, (c) =>
+						Option.fromNullable(c.pullDatabase?.source),
+					).pipe(Option.getOrUndefined),
 				);
 
 				const sourceUrl = yield* getDatabaseUrlFromSource(source);

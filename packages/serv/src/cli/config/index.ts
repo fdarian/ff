@@ -35,6 +35,7 @@ const tryLoadConfigFromPath = (
 		).pipe(Effect.either);
 
 		if (parseResult._tag === 'Left') {
+			yield* Effect.logWarning(`Failed to parse config file: ${filePath}`);
 			return Option.none<FfServConfig>();
 		}
 
@@ -43,6 +44,7 @@ const tryLoadConfigFromPath = (
 		).pipe(Effect.either);
 
 		if (validateResult._tag === 'Left') {
+			yield* Effect.logWarning(`Invalid config schema in: ${filePath}`);
 			return Option.none<FfServConfig>();
 		}
 

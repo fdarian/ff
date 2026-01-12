@@ -1,5 +1,5 @@
 import * as platform from '@effect/platform';
-import { Context, Effect, Layer } from 'effect';
+import { Effect } from 'effect';
 
 export interface DatabaseSource {
 	readonly getConnectionUrl: Effect.Effect<
@@ -9,10 +9,6 @@ export interface DatabaseSource {
 	>;
 	readonly displayName: string;
 }
-
-export class DatabaseSourceService extends Context.Tag(
-	'ff-serv/cli/DatabaseSourceService',
-)<DatabaseSourceService, DatabaseSource>() {}
 
 export const createRailwaySource = (config: {
 	projectId: string;
@@ -48,12 +44,3 @@ export const createDirectSource = (url: string): DatabaseSource => ({
 	displayName: 'Direct Connection',
 	getConnectionUrl: Effect.succeed(url),
 });
-
-export const createRailwaySourceLayer = (config: {
-	projectId: string;
-	environmentId: string;
-	serviceId: string;
-}) => Layer.succeed(DatabaseSourceService, createRailwaySource(config));
-
-export const createDirectSourceLayer = (url: string) =>
-	Layer.succeed(DatabaseSourceService, createDirectSource(url));
