@@ -1,0 +1,18 @@
+#!/usr/bin/env node
+import * as cli from '@effect/cli';
+import * as BunContext from '@effect/platform-bun/BunContext';
+import * as BunRuntime from '@effect/platform-bun/BunRuntime';
+import { Effect } from 'effect';
+import { dbCommand } from './commands/db/index.js';
+import pkg from '../../package.json' with { type: 'json' };
+
+const rootCommand = cli.Command.make('ff-serv', {}, () =>
+	Effect.log('ff-serv CLI - Use --help for available commands'),
+).pipe(cli.Command.withSubcommands([dbCommand]));
+
+const main = cli.Command.run(rootCommand, {
+	name: 'ff-serv',
+	version: pkg.version,
+});
+
+main(process.argv).pipe(Effect.provide(BunContext.layer), BunRuntime.runMain);
