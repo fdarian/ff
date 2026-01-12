@@ -16,7 +16,7 @@ import {
 } from './shared.js';
 
 const DEFAULT_TARGET_DATABASE_URL =
-	'postgresql://postgres:supersecret@postgres.ff.orb.local:5432/postgres';
+	'postgresql://postgres:supersecret@postgres:5432/postgres';
 
 type DatabaseInfo = {
 	host: string;
