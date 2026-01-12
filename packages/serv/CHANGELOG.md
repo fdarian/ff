@@ -1,5 +1,11 @@
 # ff-serv
 
+## 0.1.5
+
+### Patch Changes
+
+- 052b88f: `ff-serv` CLI for `db pull` and `db dump`
+
 ## 0.1.4
 
 ### Patch Changes
