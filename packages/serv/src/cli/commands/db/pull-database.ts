@@ -373,7 +373,7 @@ export const pullDatabaseCommand = cli.Command.make(
 					return;
 				}
 			} else {
-				const dumpPath = yield* createDumpFile();
+				const dumpPath = yield* createDumpFile;
 				dumpState = { filePath: dumpPath, downloaded: false };
 
 				const source = yield* resolveDatabaseSource(
