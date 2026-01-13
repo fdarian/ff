@@ -3,7 +3,7 @@
 	"version": "0.1.7",
 	"type": "module",
 	"bin": {
-		"ff-serv": "./dist/cli"
+		"ff-serv": "./dist/cli.js"
 	},
 	"exports": {
 		".": {
