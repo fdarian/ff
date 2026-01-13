@@ -1,5 +1,11 @@
 # ff-serv
 
+## 0.1.8
+
+### Patch Changes
+
+- a82c184: Fix bin path
+
 ## 0.1.7
 
 ### Patch Changes
