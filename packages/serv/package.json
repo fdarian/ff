@@ -44,7 +44,6 @@
 	},
 	"peerDependencies": {
 		"effect": "^3",
-		"pino": "^9",
 		"@effect/opentelemetry": "^0.60.0",
 		"get-port": "^7",
 		"@orpc/server": "^1"
