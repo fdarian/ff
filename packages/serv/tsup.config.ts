@@ -7,11 +7,5 @@ export default defineConfig({
 	splitting: false,
 	sourcemap: true,
 	clean: true,
-	external: [
-		'effect',
-		'pino',
-		'@effect/opentelemetry',
-		'get-port',
-		'@orpc/server',
-	],
+	external: ['effect', '@effect/opentelemetry', 'get-port', '@orpc/server'],
 });
