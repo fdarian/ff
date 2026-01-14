@@ -1,5 +1,11 @@
 # ff-serv
 
+## 0.1.9
+
+### Patch Changes
+
+- 716dabe: Remove pino from `Logger`
+
 ## 0.1.8
 
 ### Patch Changes
