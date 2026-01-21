@@ -1,5 +1,11 @@
 # ff-ai
 
+## 0.2.1
+
+### Patch Changes
+
+- 13bbf44: Fix leftover LanguageModelV2
+
 ## 0.2.0
 
 ### Minor Changes
