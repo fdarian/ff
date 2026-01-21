@@ -83,7 +83,7 @@ describe('saveMessage', () => {
 			yield* Effect.tryPromise(() =>
 				generateText({
 					tools: params.tools,
-					model: new AiTest.MockLanguageModelV2({
+					model: new AiTest.MockLanguageModelV3({
 						// @ts-expect-error
 						doGenerate: async ({ prompt }) => {
 							const step = params.steps[stepNumber++];
