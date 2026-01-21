@@ -1,5 +1,11 @@
 # ff-ai
 
+## 0.2.0
+
+### Minor Changes
+
+- eda3107: AI SDK v6
+
 ## 0.1.1
 
 ### Patch Changes
