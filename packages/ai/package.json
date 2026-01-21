@@ -36,9 +36,9 @@
 	},
 	"peerDependencies": {
 		"@effect/platform": "^0.93.6",
-		"@ai-sdk/provider": "^2.0.0",
-		"@ai-sdk/valibot": "^1.0.16",
-		"ai": "^5.0.89",
+		"@ai-sdk/provider": "^3",
+		"@ai-sdk/valibot": "^2",
+		"ai": "^6",
 		"drizzle-orm": "^0.44.7",
 		"effect": "^3.19.3",
 		"postgres": "^3.4.7",
