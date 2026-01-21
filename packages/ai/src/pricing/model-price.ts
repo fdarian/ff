@@ -1,4 +1,3 @@
-import type * as AiProvider from '@ai-sdk/provider';
 import { HttpClient } from '@effect/platform';
 import type * as Ai from 'ai';
 import { Effect, Schema } from 'effect';
@@ -21,7 +20,7 @@ export type UsageCost = {
 const priceCache = new Map<string, ModelsDevData>();
 
 namespace ModelInput {
-	export type Type = AiProvider.LanguageModelV2 | string;
+	export type Type = Ai.LanguageModel | string;
 
 	export function getProvider(model: Type): string {
 		if (typeof model === 'string') return 'vercel';
