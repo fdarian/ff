@@ -129,6 +129,10 @@ layer(BunContext.layer)((it) => {
 								yield* database.db((d) =>
 									d.insert(users).values({ id: '1', name: 'Dave' }),
 								);
+
+								yield* database.tx((d) =>
+									d.insert(users).values({ id: '2', name: 'Bob' }),
+								);
 								return yield* Effect.fail(new Error('Intentional failure'));
 							}),
 						)
