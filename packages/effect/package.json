@@ -25,6 +25,7 @@
 	},
 	"devDependencies": {
 		"@effect/vitest": "^0.27.0",
+		"@libsql/client": "^0.17.0",
 		"@orpc/contract": "^1.11.3",
 		"@orpc/server": "^1.11.3",
 		"@total-typescript/tsconfig": "^1.0.4",
@@ -35,7 +36,13 @@
 		"vitest": "^4.0.10"
 	},
 	"peerDependencies": {
+		"drizzle-orm": "^0.44.7",
 		"effect": "^3.19.3"
+	},
+	"peerDependenciesMeta": {
+		"drizzle-orm": {
+			"optional": true
+		}
 	},
 	"publishConfig": {
 		"access": "public"
