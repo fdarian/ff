@@ -1,5 +1,11 @@
 import { Context, Data, Effect, FiberSet, Layer } from 'effect';
 
+// TypeScript issue where the return type of createDatabase
+// contains internal Effect types (TagTypeId) that aren't exported
+// from this module,
+// so TypeScript can't "name" them in the declaration file.
+export const TagTypeId = Context.TagTypeId;
+
 export class DrizzleError extends Data.TaggedError('ff-effect/DrizzleError')<{
 	message: string;
 	cause?: unknown;
@@ -24,9 +30,9 @@ export function createDatabase<
 	type Client = TClient | TxClient<TClient>;
 	type Tx = TxClient<TClient>;
 
-	const Drizzle = Context.Tag(tagId)<TAG, Client>();
+	class Drizzle extends Context.Tag(tagId)<Drizzle, Client>() {}
 	const txTag = `${tagId}.tx` as const;
-	const DrizzleTx = Context.Tag(txTag)<typeof txTag, Tx>();
+	class DrizzleTx extends Context.Tag(txTag)<DrizzleTx, Tx>() {}
 
 	const db = <T>(fn: (client: Client) => Promise<T>) =>
 		Effect.gen(function* () {
