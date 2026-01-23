@@ -58,7 +58,8 @@ export function createDatabase<
 	const withTransaction = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
 		Effect.gen(function* () {
 			const client = yield* Drizzle;
-			const runFork = yield* FiberSet.makeRuntimePromise<R>();
+			const runFork =
+				yield* FiberSet.makeRuntimePromise<Exclude<R, DrizzleTx>>();
 
 			return yield* Effect.tryPromise<A, E | DrizzleError>({
 				try: () =>
@@ -68,7 +69,7 @@ export function createDatabase<
 								Effect.provideService(Drizzle, txClient as Client),
 								Effect.provideService(DrizzleTx, txClient as Tx),
 								Effect.mapError((e) => new WrappedTxError('', { cause: e })),
-							) as Effect.Effect<A, WrappedTxError, R>,
+							) as Effect.Effect<A, WrappedTxError, Exclude<R, DrizzleTx>>,
 						),
 					),
 				catch: (error) => {
