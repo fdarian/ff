@@ -1,5 +1,11 @@
 # ff-effect
 
+## 0.0.8
+
+### Patch Changes
+
+- 611ace6: Add Drizzle ORM integration with `createDatabase` helper. Provides type-safe database operations with transaction support through `db`, `tx`, and `withTransaction`.
+
 ## 0.0.7
 
 ### Patch Changes
