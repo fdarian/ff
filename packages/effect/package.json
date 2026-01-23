@@ -20,22 +20,33 @@
 	],
 	"scripts": {
 		"build": "tsup",
-		"test": "vitest run",
+		"test": "bun -b vitest run",
 		"dev": "tsup --watch"
 	},
 	"devDependencies": {
+		"@effect/platform": "^0.94.2",
+		"@effect/platform-bun": "^0.87.1",
+		"@effect/platform-node": "^0.104.1",
 		"@effect/vitest": "^0.27.0",
+		"@libsql/client": "^0.17.0",
 		"@orpc/contract": "^1.11.3",
 		"@orpc/server": "^1.11.3",
 		"@total-typescript/tsconfig": "^1.0.4",
 		"@types/bun": "^1.3.2",
+		"@typescript/native-preview": "^7.0.0-dev.20260122.4",
 		"tsup": "^8.5.0",
 		"typescript": "^5.9.3",
 		"valibot": "^1.1.0",
 		"vitest": "^4.0.10"
 	},
 	"peerDependencies": {
+		"drizzle-orm": "^0.44.7",
 		"effect": "^3.19.3"
+	},
+	"peerDependenciesMeta": {
+		"drizzle-orm": {
+			"optional": true
+		}
 	},
 	"publishConfig": {
 		"access": "public"
