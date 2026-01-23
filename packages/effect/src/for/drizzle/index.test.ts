@@ -51,7 +51,7 @@ layer(BunContext.layer)((it) => {
 				const database = createDatabase('test/db', Effect.succeed(testDb));
 
 				const result = yield* database
-					.db((client) => client.select().from(users))
+					.db((d) => d.select().from(users))
 					.pipe(Effect.provide(database.layer));
 
 				expect(result).toEqual([{ id: '1', name: 'Alice' }]);
@@ -91,20 +91,18 @@ layer(BunContext.layer)((it) => {
 					const ok = 'ok' as const;
 					const txResult = yield* database.withTransaction(
 						Effect.gen(function* () {
-							yield* database.db((client) =>
-								client.insert(users).values({ id: '1', name: 'Bob' }),
+							yield* database.db((d) =>
+								d.insert(users).values({ id: '1', name: 'Bob' }),
 							);
-							yield* database.db((client) =>
-								client.insert(users).values({ id: '2', name: 'Carol' }),
+							yield* database.db((d) =>
+								d.insert(users).values({ id: '2', name: 'Carol' }),
 							);
 							return ok;
 						}),
 					);
 					expectTypeOf(txResult).toEqualTypeOf<typeof ok>();
 
-					const result = yield* database.db((client) =>
-						client.select().from(users),
-					);
+					const result = yield* database.db((d) => d.select().from(users));
 					expect(result).toHaveLength(2);
 					expect(result).toEqual([
 						{ id: '1', name: 'Bob' },
@@ -128,8 +126,8 @@ layer(BunContext.layer)((it) => {
 					const txResult = yield* database
 						.withTransaction(
 							Effect.gen(function* () {
-								yield* database.db((client) =>
-									client.insert(users).values({ id: '1', name: 'Dave' }),
+								yield* database.db((d) =>
+									d.insert(users).values({ id: '1', name: 'Dave' }),
 								);
 								return yield* Effect.fail(new Error('Intentional failure'));
 							}),
@@ -138,7 +136,7 @@ layer(BunContext.layer)((it) => {
 
 					expect(txResult._tag).toBe('Left');
 
-					return yield* database.db((client) => client.select().from(users));
+					return yield* database.db((d) => d.select().from(users));
 				}).pipe(Effect.provide(database.layer));
 
 				expect(result).toEqual([]);
