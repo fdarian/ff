@@ -20,10 +20,13 @@
 	],
 	"scripts": {
 		"build": "tsup",
-		"test": "vitest run",
+		"test": "bun -b vitest run",
 		"dev": "tsup --watch"
 	},
 	"devDependencies": {
+		"@effect/platform": "^0.94.2",
+		"@effect/platform-bun": "^0.87.1",
+		"@effect/platform-node": "^0.104.1",
 		"@effect/vitest": "^0.27.0",
 		"@libsql/client": "^0.17.0",
 		"@orpc/contract": "^1.11.3",
