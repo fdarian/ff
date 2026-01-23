@@ -1,12 +1,12 @@
+import { randomUUID } from 'node:crypto';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { createClient } from '@libsql/client';
 import { sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/libsql';
 import { sqliteTable, text } from 'drizzle-orm/sqlite-core';
 import { Effect } from 'effect';
-import { randomUUID } from 'node:crypto';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, expectTypeOf, it } from 'vitest';
 import { createDatabase, DrizzleError } from './index.js';
 
 const users = sqliteTable('users', {
@@ -24,7 +24,9 @@ function createTestDb() {
 
 async function setupTable(testDb: ReturnType<typeof createTestDb>) {
 	await testDb.run(sql`DROP TABLE IF EXISTS users`);
-	await testDb.run(sql`CREATE TABLE users (id TEXT PRIMARY KEY, name TEXT NOT NULL)`);
+	await testDb.run(
+		sql`CREATE TABLE users (id TEXT PRIMARY KEY, name TEXT NOT NULL)`,
+	);
 }
 
 describe('db', () => {
@@ -45,7 +47,10 @@ describe('db', () => {
 	it('surfaces errors as DrizzleError', async () => {
 		const testDb = createTestDb();
 
-		const { db, layer } = createDatabase('test/db-error', Effect.succeed(testDb));
+		const { db, layer } = createDatabase(
+			'test/db-error',
+			Effect.succeed(testDb),
+		);
 
 		const result = await Effect.gen(function* () {
 			return yield* db(() => Promise.reject(new Error('DB failure')));
@@ -63,15 +68,25 @@ describe('withTransaction', () => {
 		const testDb = createTestDb();
 		await setupTable(testDb);
 
-		const { db, withTransaction, layer } = createDatabase('test/db-tx', Effect.succeed(testDb));
+		const { db, withTransaction, layer } = createDatabase(
+			'test/db-tx',
+			Effect.succeed(testDb),
+		);
 
 		await Effect.gen(function* () {
-			yield* withTransaction(
+			const ok = 'ok' as const;
+			const txResult = yield* withTransaction(
 				Effect.gen(function* () {
-					yield* db((client) => client.insert(users).values({ id: '1', name: 'Bob' }));
-					yield* db((client) => client.insert(users).values({ id: '2', name: 'Carol' }));
+					yield* db((client) =>
+						client.insert(users).values({ id: '1', name: 'Bob' }),
+					);
+					yield* db((client) =>
+						client.insert(users).values({ id: '2', name: 'Carol' }),
+					);
+					return ok;
 				}),
 			);
+			expectTypeOf(txResult).toEqualTypeOf<typeof ok>();
 
 			const result = yield* db((client) => client.select().from(users));
 			expect(result).toHaveLength(2);
@@ -86,12 +101,17 @@ describe('withTransaction', () => {
 		const testDb = createTestDb();
 		await setupTable(testDb);
 
-		const { db, withTransaction, layer } = createDatabase('test/db-rollback', Effect.succeed(testDb));
+		const { db, withTransaction, layer } = createDatabase(
+			'test/db-rollback',
+			Effect.succeed(testDb),
+		);
 
 		const result = await Effect.gen(function* () {
 			const txResult = yield* withTransaction(
 				Effect.gen(function* () {
-					yield* db((client) => client.insert(users).values({ id: '1', name: 'Dave' }));
+					yield* db((client) =>
+						client.insert(users).values({ id: '1', name: 'Dave' }),
+					);
 					return yield* Effect.fail(new Error('Intentional failure'));
 				}),
 			).pipe(Effect.either);

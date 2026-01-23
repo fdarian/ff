@@ -49,7 +49,7 @@ export function createDatabase<TClient extends AnyDrizzleClient, E, R>(
       const client = yield* Drizzle;
       const runFork = yield* FiberSet.makeRuntimePromise<R>();
 
-      return yield* Effect.tryPromise({
+      return yield* Effect.tryPromise<A, E | DrizzleError>({
         try: () =>
           (client as TClient).transaction((txClient) =>
             runFork(
