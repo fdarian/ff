@@ -25,7 +25,8 @@ export function createDatabase<
 	type Tx = TxClient<TClient>;
 
 	const Drizzle = Context.Tag(tagId)<TAG, Client>();
-	const DrizzleTx = Context.Tag(`${tagId}.tx`)<`${TAG}.tx`, Tx>();
+	const txTag = `${tagId}.tx` as const;
+	const DrizzleTx = Context.Tag(txTag)<typeof txTag, Tx>();
 
 	const db = <T>(fn: (client: Client) => Promise<T>) =>
 		Effect.gen(function* () {
@@ -75,8 +76,6 @@ export function createDatabase<
 		}).pipe(Effect.scoped);
 
 	return {
-		Drizzle,
-		DrizzleTx,
 		db,
 		tx,
 		withTransaction,
