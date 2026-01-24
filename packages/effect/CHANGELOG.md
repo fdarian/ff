@@ -1,5 +1,11 @@
 # ff-effect
 
+## 0.0.9
+
+### Patch Changes
+
+- 081577d: Export `Drizzle` and `DrizzleTx` from `createDatabase`
+
 ## 0.0.8
 
 ### Patch Changes

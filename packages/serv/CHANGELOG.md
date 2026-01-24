@@ -1,5 +1,11 @@
 # ff-serv
 
+## 0.1.10
+
+### Patch Changes
+
+- e661054: Use Effect.runtime to avoid the need adding Scope
+
 ## 0.1.9
 
 ### Patch Changes
