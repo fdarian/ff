@@ -1,4 +1,4 @@
-import { Effect, FiberSet } from 'effect';
+import { Effect, FiberSet, Runtime } from 'effect';
 
 type LogParams = [obj: unknown, msg?: string];
 function extractParams(...[obj, msg]: LogParams) {
@@ -11,11 +11,12 @@ function extractParams(...[obj, msg]: LogParams) {
 export namespace Logger {
 	export const sync = () =>
 		Effect.gen(function* () {
-			const runPromise = yield* FiberSet.makeRuntimePromise();
+			const runtime = yield* Effect.runtime();
 
 			const run = (e: Effect.Effect<void, never, never>) => {
 				// Intentionally ignoring the await here
-				void runPromise(e);
+				// void runPromise(e);
+				void Runtime.runPromise(runtime)(e);
 			};
 
 			return {
