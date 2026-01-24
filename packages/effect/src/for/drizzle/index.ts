@@ -85,6 +85,8 @@ export function createDatabase<
 	return {
 		db,
 		tx,
+		Drizzle,
+		DrizzleTx,
 		withTransaction,
 		layer: Layer.effect(Drizzle, createClient),
 	};
