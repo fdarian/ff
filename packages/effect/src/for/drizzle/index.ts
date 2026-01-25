@@ -35,19 +35,25 @@ type TxClient<TClient extends AnyDrizzleClient> = Parameters<
 
 class WrappedTxError extends Error {}
 
+const defaultPrefix = '@ff-effect/Drizzle' as const;
 
 export function createDatabase<
-	TAG extends string,
 	TClient extends AnyDrizzleClient,
 	E,
 	R,
->(tagId: TAG, createClient: Effect.Effect<TClient, E, R>) {
+	T extends string = typeof defaultPrefix,
+>(createClient: Effect.Effect<TClient, E, R>, opts?: { tagId?: T }) {
 	type Client = TClient | TxClient<TClient>;
 	type Tx = TxClient<TClient>;
 
-	class Drizzle extends Context.Tag(tagId)<Drizzle, Client>() {}
-	const txTag = `${tagId}.tx` as const;
-	class DrizzleTx extends Context.Tag(txTag)<DrizzleTx, Tx>() {}
+	const tagId = (opts?.tagId ?? defaultPrefix) as T;
+
+	type Drizzle = typeof tagId;
+	const Drizzle = Context.Tag(tagId)<Drizzle, Client>();
+
+	const drizzleTxTagId = `${tagId}.tx` as const;
+	type DrizzleTx = typeof drizzleTxTagId;
+	const DrizzleTx = Context.Tag(drizzleTxTagId)<DrizzleTx, Tx>();
 
 	const db = <T>(fn: (client: Client) => Promise<T>) =>
 		Effect.gen(function* () {
