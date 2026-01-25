@@ -1,54 +1,52 @@
-import { randomUUID } from 'node:crypto';
-import { FileSystem, Path } from '@effect/platform';
 import * as BunContext from '@effect/platform-bun/BunContext';
 import { describe, expect, layer } from '@effect/vitest';
-import { createClient } from '@libsql/client';
-import { sql } from 'drizzle-orm';
-import { drizzle } from 'drizzle-orm/libsql';
-import { sqliteTable, text } from 'drizzle-orm/sqlite-core';
-import { Effect } from 'effect';
+import { PGlite } from '@electric-sql/pglite';
+import { pgTable, text } from 'drizzle-orm/pg-core';
+import { drizzle } from 'drizzle-orm/pglite';
+import { Effect, Layer } from 'effect';
 import { expectTypeOf } from 'vitest';
 import { createDatabase, DrizzleError } from './index.js';
 
-const users = sqliteTable('users', {
+const users = pgTable('users', {
 	id: text('id').primaryKey(),
 	name: text('name').notNull(),
 });
 
 const schema = { users };
 
-const createTestDb = Effect.gen(function* () {
-	const fs = yield* FileSystem.FileSystem;
-	const path = yield* Path.Path;
+export class TestDb extends Effect.Service<TestDb>()('TestDb', {
+	accessors: true,
+	scoped: Effect.gen(function* () {
+		const db = new PGlite();
+		yield* Effect.promise(async () => {
+			await db.query('DROP TABLE IF EXISTS users');
+			await db.query(
+				'CREATE TABLE users (id TEXT PRIMARY KEY, name TEXT NOT NULL)',
+			);
+		});
 
-	const tmpDir = yield* fs.makeTempDirectoryScoped();
-	const dbPath = path.join(tmpDir, `test-${randomUUID()}.db`);
+		const dump = yield* Effect.promise(() => db.dumpDataDir());
 
-	const client = createClient({ url: `file:${dbPath}` });
-	return drizzle(client, { schema });
-});
+		return {
+			get: () =>
+				Effect.gen(function* () {
+					const db = new PGlite('memory://', { loadDataDir: dump });
+					return drizzle(db, { schema });
+				}),
+		};
+	}),
+}) {}
 
-const setupTable = (testDb: ReturnType<typeof drizzle>) =>
-	Effect.gen(function* () {
-		yield* Effect.promise(() => testDb.run(sql`DROP TABLE IF EXISTS users`));
-		yield* Effect.promise(() =>
-			testDb.run(
-				sql`CREATE TABLE users (id TEXT PRIMARY KEY, name TEXT NOT NULL)`,
-			),
-		);
-	});
-
-layer(BunContext.layer)((it) => {
+layer(Layer.mergeAll(BunContext.layer, TestDb.Default))((it) => {
 	describe('db', () => {
 		it.scoped('wraps promises and returns correct data', () =>
 			Effect.gen(function* () {
-				const testDb = yield* createTestDb;
-				yield* setupTable(testDb);
+				const testDb = yield* TestDb.get();
 				yield* Effect.promise(() =>
 					testDb.insert(users).values({ id: '1', name: 'Alice' }),
 				);
 
-				const database = createDatabase('test/db', Effect.succeed(testDb));
+				const database = createDatabase(Effect.succeed(testDb));
 
 				const result = yield* database
 					.db((d) => d.select().from(users))
@@ -60,12 +58,9 @@ layer(BunContext.layer)((it) => {
 
 		it.scoped('surfaces errors as DrizzleError', () =>
 			Effect.gen(function* () {
-				const testDb = yield* createTestDb;
+				const testDb = yield* TestDb.get();
 
-				const database = createDatabase(
-					'test/db-error',
-					Effect.succeed(testDb),
-				);
+				const database = createDatabase(Effect.succeed(testDb));
 
 				const result = yield* database
 					.db(() => Promise.reject(new Error('DB failure')))
@@ -82,10 +77,9 @@ layer(BunContext.layer)((it) => {
 	describe('withTransaction', () => {
 		it.scoped('provides transaction context to nested db calls', () =>
 			Effect.gen(function* () {
-				const testDb = yield* createTestDb;
-				yield* setupTable(testDb);
+				const testDb = yield* TestDb.get();
 
-				const database = createDatabase('test/db-tx', Effect.succeed(testDb));
+				const database = createDatabase(Effect.succeed(testDb));
 
 				yield* Effect.gen(function* () {
 					const ok = 'ok' as const;
@@ -114,13 +108,9 @@ layer(BunContext.layer)((it) => {
 
 		it.scoped('rolls back on error', () =>
 			Effect.gen(function* () {
-				const testDb = yield* createTestDb;
-				yield* setupTable(testDb);
+				const testDb = yield* TestDb.get();
 
-				const database = createDatabase(
-					'test/db-rollback',
-					Effect.succeed(testDb),
-				);
+				const database = createDatabase(Effect.succeed(testDb));
 
 				const result = yield* Effect.gen(function* () {
 					const txResult = yield* database
@@ -145,6 +135,75 @@ layer(BunContext.layer)((it) => {
 
 				expect(result).toEqual([]);
 			}),
+		);
+	});
+
+	describe('multiple database', () => {
+		it.scoped(
+			'allows creating multiple database instances with different tagIds',
+			() =>
+				Effect.gen(function* () {
+					const testDb = yield* TestDb;
+					const database1 = createDatabase(testDb.get());
+
+					const database2Identifier = 'custom-db' as const;
+					const database2 = createDatabase(testDb.get(), {
+						tagId: database2Identifier,
+					});
+
+					const firstDbEffect = Effect.gen(function* () {
+						yield* database1.db((d) =>
+							d.insert(users).values({ id: '1', name: 'Eve' }),
+						);
+					});
+					expectTypeOf(firstDbEffect).toEqualTypeOf<
+						Effect.Effect<
+							void,
+							DrizzleError,
+							typeof database1.Drizzle.Identifier
+						>
+					>();
+
+					const secondDbEffect = Effect.gen(function* () {
+						yield* database2.db((d) =>
+							d.insert(users).values({ id: '2', name: 'Frank' }),
+						);
+					});
+					expectTypeOf(secondDbEffect).toEqualTypeOf<
+						Effect.Effect<void, DrizzleError, typeof database2Identifier>
+					>();
+
+					const main = Effect.gen(function* () {
+						yield* firstDbEffect;
+						yield* secondDbEffect;
+
+						yield* database1
+							.db((d) => d.select().from(users))
+							.pipe(
+								Effect.flatMap((result) =>
+									Effect.sync(() => {
+										expect(result).toEqual([{ id: '1', name: 'Eve' }]);
+									}),
+								),
+							);
+
+						yield* database2
+							.db((d) => d.select().from(users))
+							.pipe(
+								Effect.flatMap((result) =>
+									Effect.sync(() => {
+										expect(result).toEqual([{ id: '2', name: 'Frank' }]);
+									}),
+								),
+							);
+					}).pipe(
+						Effect.provide(database1.layer),
+						Effect.provide(database2.layer),
+					);
+
+					yield* main;
+					expectTypeOf(main).toEqualTypeOf<Effect.Effect<void, DrizzleError>>();
+				}),
 		);
 	});
 });
