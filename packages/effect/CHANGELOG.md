@@ -1,5 +1,11 @@
 # ff-effect
 
+## 0.0.10
+
+### Patch Changes
+
+- b193333: Fix build issue and better context tag
+
 ## 0.0.9
 
 ### Patch Changes
