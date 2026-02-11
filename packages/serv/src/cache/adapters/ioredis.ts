@@ -1,5 +1,5 @@
 import { Effect, Option } from 'effect'
-import type { RedisClient } from './adapter.js'
+import type { RedisClient } from '../adapter.js'
 
 type IORedisClient = {
   get(key: string): Promise<string | null>
