@@ -75,6 +75,8 @@ Cache.make({
 
 Persists cache entries to Redis. Entries survive process restarts.
 
+#### ioredis
+
 ```ts
 import { CacheAdapter } from 'ff-serv/cache'
 import { ioredis } from 'ff-serv/cache/ioredis'
@@ -84,6 +86,25 @@ Cache.make({
     client: ioredis(redisClient),
     keyPrefix: 'user',
     schema: UserSchema, // optional Effect Schema for encode/decode
+  }),
+  ttl: Duration.minutes(5),
+  lookup: (id: number) => fetchUser(id),
+})
+```
+
+#### bun-redis
+
+```ts
+import { CacheAdapter } from 'ff-serv/cache'
+import { bunRedis } from 'ff-serv/cache/bun-redis'
+import { RedisClient } from 'bun'
+
+const client = new RedisClient()
+
+Cache.make({
+  adapter: CacheAdapter.redis({
+    client: bunRedis(client),
+    keyPrefix: 'user',
   }),
   ttl: Duration.minutes(5),
   lookup: (id: number) => fetchUser(id),

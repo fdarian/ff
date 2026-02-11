@@ -25,6 +25,11 @@
 			"types": "./dist/exports/cache-ioredis.d.ts",
 			"import": "./dist/exports/cache-ioredis.js",
 			"require": "./dist/exports/cache-ioredis.cjs"
+		},
+		"./cache/bun-redis": {
+			"types": "./dist/exports/cache-bun-redis.d.ts",
+			"import": "./dist/exports/cache-bun-redis.js",
+			"require": "./dist/exports/cache-bun-redis.cjs"
 		}
 	},
 	"files": [
