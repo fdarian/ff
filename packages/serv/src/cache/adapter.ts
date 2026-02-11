@@ -30,6 +30,7 @@ export type CacheAdapter<Key, Value> = {
 }
 
 export namespace CacheAdapter {
+  // No-op adapter — Effect Cache IS the in-memory store. This only carries `capacity`.
   export function memory<Key, Value>(opts?: {
     capacity?: number
   }): CacheAdapter<Key, Value> {

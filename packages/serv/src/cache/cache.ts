@@ -8,6 +8,7 @@ import {
 } from 'effect'
 import type { CacheAdapter, CacheEntry } from './adapter.js'
 
+// Bundles value with resolved TTL/SWR so the SWR check at read time uses per-entry durations
 type CacheValue<Value> = {
   readonly value: Value
   readonly ttlMs: number
@@ -51,6 +52,8 @@ export namespace Cache {
         : 0
       const capacity = adapter?.capacity ?? Number.MAX_SAFE_INTEGER
 
+      // makeWith uses `timeToLive: (exit) => Duration` — the lookup stores CacheValue
+      // so timeToLive can extract the total window (ttl + swr) from the exit result
       const inner = yield* EffectCache.makeWith({
         capacity,
         lookup: (key: Key) =>
@@ -62,6 +65,7 @@ export namespace Cache {
                 const age = now - cached.value.storedAt
                 const totalWindow = defaultTtlMs + defaultSwrMs
                 if (age < totalWindow) {
+                  // Adjust remaining TTL/SWR for elapsed age so SWR triggers at correct real-world time
                   return {
                     value: cached.value.value,
                     ttlMs: Math.max(0, defaultTtlMs - age),
@@ -96,6 +100,7 @@ export namespace Cache {
         },
       })
 
+      // Safe without synchronization — no yield points between has() and add() (cooperative scheduling)
       const refreshingKeys = new Set<string>()
 
       const get = (key: Key) =>
@@ -111,6 +116,7 @@ export namespace Cache {
                 const keyStr = JSON.stringify(key)
                 if (!refreshingKeys.has(keyStr)) {
                   refreshingKeys.add(keyStr)
+                  // refresh() recomputes without invalidating, so stale value remains available during recomputation
                   yield* Effect.forkDaemon(
                     inner.refresh(key).pipe(
                       Effect.ensuring(
