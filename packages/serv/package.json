@@ -15,6 +15,16 @@
 			"types": "./dist/exports/orpc.d.ts",
 			"import": "./dist/exports/orpc.js",
 			"require": "./dist/exports/orpc.cjs"
+		},
+		"./cache": {
+			"types": "./dist/exports/cache.d.ts",
+			"import": "./dist/exports/cache.js",
+			"require": "./dist/exports/cache.cjs"
+		},
+		"./cache/ioredis": {
+			"types": "./dist/exports/cache-ioredis.d.ts",
+			"import": "./dist/exports/cache-ioredis.js",
+			"require": "./dist/exports/cache-ioredis.cjs"
 		}
 	},
 	"files": [
@@ -46,7 +56,11 @@
 		"effect": "^3",
 		"@effect/opentelemetry": "^0.60.0",
 		"get-port": "^7",
-		"@orpc/server": "^1"
+		"@orpc/server": "^1",
+		"ioredis": "^5"
+	},
+	"peerDependenciesMeta": {
+		"ioredis": { "optional": true }
 	},
 	"publishConfig": {
 		"access": "public"
