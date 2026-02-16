@@ -2,8 +2,8 @@ import { Effect, type Layer } from 'effect';
 
 export async function runTester<R>(opts: {
 	debug?: boolean;
-	dependencies: Layer.Layer<R, any>;
-	effect: Effect.Effect<any, any, R>;
+	dependencies: Layer.Layer<R, unknown>;
+	effect: Effect.Effect<unknown, unknown, R>;
 }) {
 	// const MainLayer = Layer.provideMerge(
 	// 	opts.dependencies,
