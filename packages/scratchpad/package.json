@@ -18,6 +18,7 @@
 		"ai": "^6.0.42",
 		"effect": "^3.19.14",
 		"ff-ai": "workspace:*",
+		"ff-effect": "workspace:*",
 		"ff-serv": "workspace:*",
 		"postgres": "^3.4.7"
 	},
