@@ -26,6 +26,7 @@ export class DrizzleError extends Data.TaggedError('ff-effect/DrizzleError')<{
 }> {}
 
 type AnyDrizzleClient = {
+	// biome-ignore lint/suspicious/noExplicitAny: generic client type
 	transaction: (fn: (tx: any) => Promise<any>) => Promise<any>;
 };
 

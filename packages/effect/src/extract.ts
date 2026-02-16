@@ -1,13 +1,15 @@
 import { Context, Effect, pipe } from 'effect';
 
+// biome-ignore lint/suspicious/noExplicitAny: type inference pattern
 type InferClass<T> = T extends new (...args: any[]) => infer R ? R : never;
 
-// biome-ignore lint/suspicious/noExplicitAny: intended
 export function extract<
+	// biome-ignore lint/suspicious/noExplicitAny: type inference pattern
 	P extends any[],
 	A,
 	E,
 	R,
+	// biome-ignore lint/suspicious/noExplicitAny: type inference pattern
 	INFERRED_EXCLUDED extends Context.Tag<any, any> = never,
 	EXCLUDED = InferClass<INFERRED_EXCLUDED>,
 >(
