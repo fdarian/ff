@@ -7,6 +7,9 @@ const main = Effect.gen(function* () {
 	yield* query;
 });
 
-const MainLayer = createDrizzleStoreLayer(postgres(process.env.DATABASE_URL!));
+const databaseUrl = process.env.DATABASE_URL;
+if (!databaseUrl) throw new Error('DATABASE_URL is required');
+
+const MainLayer = createDrizzleStoreLayer(postgres(databaseUrl));
 
 Effect.runPromise(main.pipe(Effect.provide(MainLayer)));
