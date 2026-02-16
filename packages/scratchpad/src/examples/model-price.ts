@@ -10,14 +10,26 @@ runTester({
 		console.log(
 			yield* getModelUsageCost({
 				model: 'alibaba/qwen3-coder-plus',
-				usage: { inputTokens: 1000, outputTokens: 100, totalTokens: 1100 },
+				usage: {
+					inputTokens: 1000,
+					outputTokens: 100,
+					totalTokens: 1100,
+					inputTokenDetails: { noCacheTokens: undefined, cacheReadTokens: undefined, cacheWriteTokens: undefined },
+					outputTokenDetails: { textTokens: undefined, reasoningTokens: undefined },
+				},
 			}),
 		);
 
 		console.log(
 			yield* getModelUsageCost({
 				model: xai('grok-4-latest'),
-				usage: { inputTokens: 1000, outputTokens: 100, totalTokens: 1100 },
+				usage: {
+					inputTokens: 1000,
+					outputTokens: 100,
+					totalTokens: 1100,
+					inputTokenDetails: { noCacheTokens: undefined, cacheReadTokens: undefined, cacheWriteTokens: undefined },
+					outputTokenDetails: { textTokens: undefined, reasoningTokens: undefined },
+				},
 			}),
 		);
 	}).pipe(Logger.withMinimumLogLevel(LogLevel.Debug)),
