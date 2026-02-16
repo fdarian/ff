@@ -1,19 +1,19 @@
 {
-  "$schema": "https://turbo.build/schema.json",
-  "tasks": {
-    "check": {
-      "dependsOn": ["check:tsc", "check:lint"]
-    },
-    "check:tsc": {},
-    "check:lint": {},
-    "build": {
-      "dependsOn": ["^build"],
-      "outputs": ["dist/**"]
-    },
-    "test": {},
-    "dev": {
-      "cache": false,
-      "persistent": true
-    }
-  }
+	"$schema": "https://turbo.build/schema.json",
+	"tasks": {
+		"check": {
+			"dependsOn": ["check:tsc", "check:lint"]
+		},
+		"check:tsc": {},
+		"check:lint": {},
+		"build": {
+			"dependsOn": ["^build"],
+			"outputs": ["dist/**"]
+		},
+		"test": {},
+		"dev": {
+			"cache": false,
+			"persistent": true
+		}
+	}
 }
