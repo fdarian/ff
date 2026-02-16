@@ -14,8 +14,15 @@ runTester({
 					inputTokens: 1000,
 					outputTokens: 100,
 					totalTokens: 1100,
-					inputTokenDetails: { noCacheTokens: undefined, cacheReadTokens: undefined, cacheWriteTokens: undefined },
-					outputTokenDetails: { textTokens: undefined, reasoningTokens: undefined },
+					inputTokenDetails: {
+						noCacheTokens: undefined,
+						cacheReadTokens: undefined,
+						cacheWriteTokens: undefined,
+					},
+					outputTokenDetails: {
+						textTokens: undefined,
+						reasoningTokens: undefined,
+					},
 				},
 			}),
 		);
@@ -27,8 +34,15 @@ runTester({
 					inputTokens: 1000,
 					outputTokens: 100,
 					totalTokens: 1100,
-					inputTokenDetails: { noCacheTokens: undefined, cacheReadTokens: undefined, cacheWriteTokens: undefined },
-					outputTokenDetails: { textTokens: undefined, reasoningTokens: undefined },
+					inputTokenDetails: {
+						noCacheTokens: undefined,
+						cacheReadTokens: undefined,
+						cacheWriteTokens: undefined,
+					},
+					outputTokenDetails: {
+						textTokens: undefined,
+						reasoningTokens: undefined,
+					},
 				},
 			}),
 		);
