@@ -1,5 +1,5 @@
 ---
-"ff-serv": minor
+"ff-serv": patch
 ---
 
 Add `Cache` module with stale-while-revalidate (SWR) support built on Effect's Cache:
