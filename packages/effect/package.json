@@ -20,6 +20,8 @@
 	],
 	"scripts": {
 		"build": "tsup",
+		"check:tsc": "tsgo --noEmit",
+		"check:lint": "biome check",
 		"test": "bun -b vitest run",
 		"dev": "tsup --watch"
 	},

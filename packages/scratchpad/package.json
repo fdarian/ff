@@ -2,6 +2,10 @@
 	"name": "@repo/scratchpad",
 	"private": true,
 	"type": "module",
+	"scripts": {
+		"check:tsc": "tsgo --noEmit",
+		"check:lint": "biome check"
+	},
 	"dependencies": {
 		"@ai-sdk/google": "^3.0.10",
 		"@ai-sdk/xai": "^3.0.29",
@@ -20,6 +24,7 @@
 	"devDependencies": {
 		"@total-typescript/tsconfig": "^1.0.4",
 		"@types/bun": "^1.3.2",
+		"@typescript/native-preview": "^7.0.0-dev.20260216.1",
 		"drizzle-kit": "^0.31.6",
 		"typescript": "^5.9.3"
 	}
