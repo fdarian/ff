@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { v7 as createUuid } from 'uuid';
-import { convertToUIMessage, ConversationMessage } from './message.js';
+import { type ConversationMessage, convertToUIMessage } from './message.js';
 
 function createTestMessage(
 	overrides: Partial<ConversationMessage.Type> = {},

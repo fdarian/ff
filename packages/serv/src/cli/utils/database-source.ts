@@ -23,10 +23,7 @@ export const createRailwaySource = (config: {
 			`--project=${config.projectId}`,
 			`--environment=${config.environmentId}`,
 			`--service=${config.serviceId}`,
-		).pipe(
-			platform.Command.stdout('inherit'),
-			platform.Command.exitCode,
-		);
+		).pipe(platform.Command.stdout('inherit'), platform.Command.exitCode);
 
 		const output = yield* platform.Command.make(
 			'railway',

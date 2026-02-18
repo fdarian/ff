@@ -1,1 +1,1 @@
-export { ioredis } from '../cache/adapters/ioredis.js'
+export { ioredis } from '../cache/adapters/ioredis.js';

@@ -3,8 +3,8 @@ import * as cli from '@effect/cli';
 import * as BunContext from '@effect/platform-bun/BunContext';
 import * as BunRuntime from '@effect/platform-bun/BunRuntime';
 import { Effect } from 'effect';
-import { dbCommand } from './commands/db/index.js';
 import pkg from '../../package.json' with { type: 'json' };
+import { dbCommand } from './commands/db/index.js';
 
 const rootCommand = cli.Command.make('ff-serv', {}, () =>
 	Effect.log('ff-serv CLI - Use --help for available commands'),

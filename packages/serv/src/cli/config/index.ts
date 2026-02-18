@@ -62,9 +62,7 @@ export const loadConfig = (
 		const pathsToTry = customConfigPath
 			? [customConfigPath]
 			: [
-					...(process.env.FF_SERV_CONFIG
-						? [process.env.FF_SERV_CONFIG]
-						: []),
+					...(process.env.FF_SERV_CONFIG ? [process.env.FF_SERV_CONFIG] : []),
 					...DEFAULT_CONFIG_PATHS,
 				];
 

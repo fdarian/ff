@@ -1,10 +1,7 @@
 import * as NodeSdk from '@effect/opentelemetry/NodeSdk';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
-import {
-	BatchSpanProcessor,
-	ConsoleSpanExporter,
-} from '@opentelemetry/sdk-trace-base';
-import { Effect, Logger as EffectLogger, Layer, LogLevel } from 'effect';
+import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-base';
+import { Effect, Layer } from 'effect';
 import { extract } from 'ff-effect';
 import { Logger } from 'ff-serv';
 import { runTester } from '../utils/run-tester';

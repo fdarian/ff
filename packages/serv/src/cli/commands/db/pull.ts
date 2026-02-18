@@ -1,6 +1,6 @@
 import * as cli from '@effect/cli';
 import * as platform from '@effect/platform';
-import { Effect, Option, Cause } from 'effect';
+import { type Cause, Effect, Option } from 'effect';
 import inquirer from 'inquirer';
 import postgres from 'postgres';
 import { loadConfig } from '../../config/index.js';
@@ -35,10 +35,7 @@ const parsePostgresUrl = (url: string): DatabaseInfo => {
 	};
 };
 
-const confirmDatabaseUrls = (
-	sourceUrl: string | null,
-	targetUrl: string,
-) =>
+const confirmDatabaseUrls = (sourceUrl: string | null, targetUrl: string) =>
 	Effect.gen(function* () {
 		const target = parsePostgresUrl(targetUrl);
 
@@ -170,9 +167,7 @@ const truncateAllTables = (
 				`Truncating ${tables.length} table(s) in schema "${schema}"...`,
 			);
 
-			const tableNames = tables
-				.map((t) => `"${schema}"."${t}"`)
-				.join(', ');
+			const tableNames = tables.map((t) => `"${schema}"."${t}"`).join(', ');
 
 			yield* Effect.tryPromise(() =>
 				conn.unsafe(`TRUNCATE ${tableNames} RESTART IDENTITY CASCADE`),
@@ -282,10 +277,7 @@ export const pullCommand = cli.Command.make(
 
 				const sourceUrl = yield* getDatabaseUrlFromSource(source);
 
-				const urlsConfirmed = yield* confirmDatabaseUrls(
-					sourceUrl,
-					targetUrl,
-				);
+				const urlsConfirmed = yield* confirmDatabaseUrls(sourceUrl, targetUrl);
 				if (!urlsConfirmed) {
 					yield* Effect.log('Operation cancelled');
 					return;
@@ -321,9 +313,7 @@ export const pullCommand = cli.Command.make(
 			);
 
 			if (!Option.isSome(fromDump)) {
-				const shouldCleanup = yield* promptCleanupDump(
-					dumpState.filePath,
-				);
+				const shouldCleanup = yield* promptCleanupDump(dumpState.filePath);
 				if (shouldCleanup) {
 					const fs = yield* platform.FileSystem.FileSystem;
 					yield* fs.remove(dumpState.filePath, { recursive: true });

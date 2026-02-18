@@ -9,8 +9,8 @@ export type ConversationMessage = ConversationMessageModule.Type;
 
 // - Pricing
 
-export { getModelUsageCost } from './pricing/model-price.js';
 export type { UsageCost } from './pricing/model-price.js';
+export { getModelUsageCost } from './pricing/model-price.js';
 
 // - Misc
 

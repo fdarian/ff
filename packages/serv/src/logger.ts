@@ -1,4 +1,4 @@
-import { Effect, FiberSet, Runtime } from 'effect';
+import { Effect, Runtime } from 'effect';
 
 type LogParams = [obj: unknown, msg?: string];
 function extractParams(...[obj, msg]: LogParams) {

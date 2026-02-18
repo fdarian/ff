@@ -1,4 +1,4 @@
-import { Data } from "effect";
+import { Data } from 'effect';
 
 export class StoreError extends Data.TaggedError('ff-ai/StoreError')<{
 	message: string;

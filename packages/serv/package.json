@@ -65,7 +65,9 @@
 		"ioredis": "^5"
 	},
 	"peerDependenciesMeta": {
-		"ioredis": { "optional": true }
+		"ioredis": {
+			"optional": true
+		}
 	},
 	"publishConfig": {
 		"access": "public"

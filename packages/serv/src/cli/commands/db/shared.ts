@@ -59,12 +59,9 @@ export const dumpToFile = (databaseUrl: string, filePath: string) =>
 				const bytesSinceLastCheck = Number(stat.size - lastSize);
 				const rateMB =
 					timeSinceLastCheck > 0
-						? (
-								bytesSinceLastCheck /
-								1024 /
-								1024 /
-								timeSinceLastCheck
-							).toFixed(2)
+						? (bytesSinceLastCheck / 1024 / 1024 / timeSinceLastCheck).toFixed(
+								2,
+							)
 						: '0';
 
 				bar.update(elapsed, {
@@ -87,7 +84,10 @@ export const dumpToFile = (databaseUrl: string, filePath: string) =>
 
 export const resolveDatabaseSource = (
 	sourceConfig?: DatabaseSourceConfig,
-): Effect.Effect<DatabaseSource, Effect.Effect.Error<typeof promptDatabaseSourceType>> =>
+): Effect.Effect<
+	DatabaseSource,
+	Effect.Effect.Error<typeof promptDatabaseSourceType>
+> =>
 	Effect.gen(function* () {
 		if (sourceConfig) {
 			if (sourceConfig.type === 'railway') {

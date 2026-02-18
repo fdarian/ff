@@ -1,1 +1,1 @@
-export { bunRedis } from '../cache/adapters/bun-redis.js'
+export { bunRedis } from '../cache/adapters/bun-redis.js';

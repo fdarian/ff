@@ -3,7 +3,7 @@ import {
 	BatchSpanProcessor,
 	ConsoleSpanExporter,
 } from '@opentelemetry/sdk-trace-base';
-import { Effect, Logger as EffectLogger, Layer, LogLevel } from 'effect';
+import { Effect, Layer } from 'effect';
 import { extract } from 'ff-effect';
 import { Logger } from 'ff-serv';
 import { runTester } from '../utils/run-tester';
