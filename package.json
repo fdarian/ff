@@ -10,7 +10,7 @@
 	"scripts": {
 		"changeset": "changeset",
 		"ci:version": "changeset version && bun install --no-frozen-lockfile",
-		"ci:release": "bun run build && changeset publish",
+		"ci:release": "bun run build && bun scripts/patch-exports.ts && changeset publish",
 		"build": "turbo run build",
 		"format": "biome check --write"
 	},
