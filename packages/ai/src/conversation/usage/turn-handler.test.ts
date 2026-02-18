@@ -41,7 +41,7 @@ function createMockStore() {
 
 function createMockAgentMessage(content: string): ConversationMessage.Type {
 	return {
-		id: createUuid() as any,
+		id: createUuid() as ConversationMessage.Id,
 		role: 'user',
 		content,
 		createdAt: new Date(),

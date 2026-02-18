@@ -10,11 +10,14 @@
 	"scripts": {
 		"changeset": "changeset",
 		"ci:version": "changeset version && bun install --no-frozen-lockfile",
-		"ci:release": "bun run build && changeset publish",
-		"build": "bun run --filter 'ff-ai' build && bun run --filter 'ff-effect' build && bun run --filter 'ff-serv' build"
+		"ci:release": "bun run build && bun scripts/patch-exports.ts && changeset publish",
+		"build": "turbo run build",
+		"format": "biome check --write"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.3.4",
-		"@changesets/cli": "^2.29.7"
-	}
+		"@changesets/cli": "^2.29.7",
+		"turbo": "^2.8.9"
+	},
+	"packageManager": "bun@1.3.9"
 }

@@ -3,16 +3,8 @@
 	"version": "0.0.10",
 	"type": "module",
 	"exports": {
-		".": {
-			"types": "./dist/index.d.ts",
-			"import": "./dist/index.js",
-			"require": "./dist/index.cjs"
-		},
-		"./for/*": {
-			"types": "./dist/for/*/index.d.ts",
-			"import": "./dist/for/*/index.js",
-			"require": "./dist/for/*/index.cjs"
-		}
+		".": "./src/index.ts",
+		"./for/*": "./src/for/*/index.ts"
 	},
 	"files": [
 		"dist",
@@ -20,6 +12,8 @@
 	],
 	"scripts": {
 		"build": "tsup",
+		"check:tsc": "tsgo --noEmit",
+		"check:lint": "biome check",
 		"test": "bun -b vitest run",
 		"dev": "tsup --watch"
 	},

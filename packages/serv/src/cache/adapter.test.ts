@@ -30,7 +30,7 @@ describe('CacheAdapter', () => {
 		);
 
 		it.effect('carries capacity', () =>
-			Effect.gen(function* () {
+			Effect.sync(() => {
 				const adapter = CacheAdapter.memory({ capacity: 100 });
 				expect(adapter.capacity).toBe(100);
 			}),
@@ -127,10 +127,12 @@ describe('CacheAdapter', () => {
 				const l1 = CacheAdapter.memory<string, string>();
 				const l2Store = new Map<string, { value: string; storedAt: number }>();
 				const l2: typeof l1 = {
-					get: (key) =>
-						Effect.succeed(
-							l2Store.has(key) ? Option.some(l2Store.get(key)!) : Option.none(),
-						),
+					get: (key) => {
+						const entry = l2Store.get(key);
+						return Effect.succeed(
+							entry !== undefined ? Option.some(entry) : Option.none(),
+						);
+					},
 					set: (key, entry) =>
 						Effect.sync(() => {
 							l2Store.set(key, entry);
@@ -168,7 +170,7 @@ describe('CacheAdapter', () => {
 		);
 
 		it.effect('uses L1 capacity', () =>
-			Effect.gen(function* () {
+			Effect.sync(() => {
 				const l1 = CacheAdapter.memory<string, string>({ capacity: 50 });
 				const l2 = CacheAdapter.memory<string, string>({ capacity: 1000 });
 				const tiered = CacheAdapter.tiered(l1, l2);

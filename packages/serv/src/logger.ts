@@ -5,6 +5,7 @@ function extractParams(...[obj, msg]: LogParams) {
 	if (typeof obj === 'string') {
 		return { message: obj };
 	}
+	// biome-ignore lint/suspicious/noExplicitAny: log attributes are unstructured
 	return { message: msg, attributes: obj as Record<string, any> };
 }
 

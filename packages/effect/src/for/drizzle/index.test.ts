@@ -29,7 +29,7 @@ export class TestDb extends Effect.Service<TestDb>()('TestDb', {
 
 		return {
 			get: () =>
-				Effect.gen(function* () {
+				Effect.sync(() => {
 					const db = new PGlite('memory://', { loadDataDir: dump });
 					return drizzle(db, { schema });
 				}),
