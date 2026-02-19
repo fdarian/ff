@@ -1,7 +1,31 @@
 import { it } from '@effect/vitest';
-import { Duration, Effect, Ref, TestClock } from 'effect';
+import { Clock, Duration, Effect, Option, Ref, TestClock } from 'effect';
 import { describe, expect } from 'vitest';
+import type { CacheAdapter, CacheEntry } from './adapter.js';
 import { Cache } from './cache.js';
+
+function makeTestAdapter<Key, Value>() {
+	const store = new Map<string, CacheEntry<Value>>();
+	const adapter: CacheAdapter<Key, Value> = {
+		get: (key) =>
+			Effect.sync(() => {
+				const entry = store.get(JSON.stringify(key));
+				return entry ? Option.some(entry) : Option.none();
+			}),
+		set: (key, entry, _ttl) =>
+			Effect.sync(() => {
+				store.set(JSON.stringify(key), entry);
+			}),
+		remove: (key) =>
+			Effect.sync(() => {
+				store.delete(JSON.stringify(key));
+			}),
+		removeAll: Effect.sync(() => {
+			store.clear();
+		}),
+	};
+	return { adapter, store };
+}
 
 describe('Cache', () => {
 	describe('core', () => {
@@ -346,6 +370,91 @@ describe('Cache', () => {
 
 				expect(yield* Ref.get(callCountA)).toBe(2);
 				expect(yield* Ref.get(callCountB)).toBe(1);
+			}),
+		);
+	});
+
+	describe('adapter', () => {
+		it.effect('uses adapter data on cold start without calling lookup', () =>
+			Effect.gen(function* () {
+				const { adapter, store } = makeTestAdapter<number, string>();
+				const now = yield* Clock.currentTimeMillis;
+				store.set(JSON.stringify(1), { value: 'cached-user-1', storedAt: now });
+
+				const callCount = yield* Ref.make(0);
+				const cache = yield* Cache.make({
+					ttl: Duration.minutes(5),
+					lookup: (id: number) =>
+						Ref.update(callCount, (n) => n + 1).pipe(
+							Effect.map(() => `user-${id}`),
+						),
+					adapter,
+				});
+
+				const value = yield* cache.get(1);
+				expect(value).toBe('cached-user-1');
+				expect(yield* Ref.get(callCount)).toBe(0);
+			}),
+		);
+
+		it.effect(
+			'SWR refresh calls lookup instead of short-circuiting with adapter',
+			() =>
+				Effect.gen(function* () {
+					const { adapter } = makeTestAdapter<number, string>();
+					const callCount = yield* Ref.make(0);
+					const cache = yield* Cache.make({
+						ttl: Duration.minutes(5),
+						swr: Duration.minutes(10),
+						lookup: (id: number) =>
+							Effect.gen(function* () {
+								yield* Ref.update(callCount, (n) => n + 1);
+								const count = yield* Ref.get(callCount);
+								return `user-${id}-v${count}`;
+							}),
+						adapter,
+					});
+
+					yield* cache.get(1);
+					yield* TestClock.adjust(Duration.minutes(7));
+
+					// Trigger SWR refresh
+					yield* cache.get(1);
+					yield* Effect.yieldNow();
+					yield* TestClock.adjust(Duration.zero);
+					yield* Effect.yieldNow();
+
+					// lookup must have been called twice (initial + refresh)
+					expect(yield* Ref.get(callCount)).toBe(2);
+				}),
+		);
+
+		it.effect('adapter updated after SWR refresh', () =>
+			Effect.gen(function* () {
+				const { adapter, store } = makeTestAdapter<number, string>();
+				const callCount = yield* Ref.make(0);
+				const cache = yield* Cache.make({
+					ttl: Duration.minutes(5),
+					swr: Duration.minutes(10),
+					lookup: (id: number) =>
+						Effect.gen(function* () {
+							yield* Ref.update(callCount, (n) => n + 1);
+							const count = yield* Ref.get(callCount);
+							return `user-${id}-v${count}`;
+						}),
+					adapter,
+				});
+
+				yield* cache.get(1);
+				yield* TestClock.adjust(Duration.minutes(7));
+
+				yield* cache.get(1);
+				yield* Effect.yieldNow();
+				yield* TestClock.adjust(Duration.zero);
+				yield* Effect.yieldNow();
+
+				const entry = store.get(JSON.stringify(1));
+				expect(entry?.value).toBe('user-1-v2');
 			}),
 		);
 	});
