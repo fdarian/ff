@@ -1,5 +1,16 @@
 # ff-serv
 
+## 0.1.11
+
+### Patch Changes
+
+- 87faf4c: Add `Cache` module with stale-while-revalidate (SWR) support built on Effect's Cache:
+  - Pluggable persistence via `CacheAdapter` interface (memory, redis, tiered)
+  - Redis client adapters for ioredis and Bun native Redis
+  - Per-entry TTL/SWR overrides via `Cache.entry()`
+  - Exported via `ff-serv/cache`, `ff-serv/cache/ioredis`, `ff-serv/cache/bun-redis`
+- 179a120: Fix SWR refresh bypassing adapter to call actual lookup
+
 ## 0.1.10
 
 ### Patch Changes
