@@ -1,8 +1,8 @@
 import { it } from '@effect/vitest';
 import { Clock, Duration, Effect, Option, Ref, TestClock } from 'effect';
 import { describe, expect } from 'vitest';
-import { Cache } from './cache.js';
 import type { CacheAdapter, CacheEntry } from './adapter.js';
+import { Cache } from './cache.js';
 
 function makeTestAdapter<Key, Value>() {
 	const store = new Map<string, CacheEntry<Value>>();
@@ -379,10 +379,7 @@ describe('Cache', () => {
 			Effect.gen(function* () {
 				const { adapter, store } = makeTestAdapter<number, string>();
 				const now = yield* Clock.currentTimeMillis;
-				store.set(
-					JSON.stringify(1),
-					{ value: 'cached-user-1', storedAt: now },
-				);
+				store.set(JSON.stringify(1), { value: 'cached-user-1', storedAt: now });
 
 				const callCount = yield* Ref.make(0);
 				const cache = yield* Cache.make({
