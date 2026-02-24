@@ -9,27 +9,48 @@ function extractParams(...[obj, msg]: LogParams) {
 	return { message: msg, attributes: obj as Record<string, any> };
 }
 
+// biome-ignore lint/suspicious/noExplicitAny: log annotations are unstructured
+type LogAnnotations = Record<string, any>;
+
+export type SyncLogger = {
+	info: (...params: Parameters<typeof Logger.info>) => void;
+	debug: (...params: Parameters<typeof Logger.debug>) => void;
+	warn: (...params: Parameters<typeof Logger.warn>) => void;
+	error: (...params: Parameters<typeof Logger.error>) => void;
+	child: (annotations: LogAnnotations) => SyncLogger;
+};
+
+function makeSyncLogger(
+	runtime: Runtime.Runtime<never>,
+	annotations: LogAnnotations,
+): SyncLogger {
+	const run = (e: Effect.Effect<void, never, never>) => {
+		const annotated =
+			Object.keys(annotations).length > 0
+				? e.pipe(Effect.annotateLogs(annotations))
+				: e;
+		void Runtime.runPromise(runtime)(annotated);
+	};
+
+	return {
+		info: (...params: Parameters<typeof Logger.info>) =>
+			run(Logger.info(...params)),
+		debug: (...params: Parameters<typeof Logger.debug>) =>
+			run(Logger.debug(...params)),
+		warn: (...params: Parameters<typeof Logger.warn>) =>
+			run(Logger.warn(...params)),
+		error: (...params: Parameters<typeof Logger.error>) =>
+			run(Logger.error(...params)),
+		child: (childAnnotations: LogAnnotations) =>
+			makeSyncLogger(runtime, { ...annotations, ...childAnnotations }),
+	};
+}
+
 export namespace Logger {
-	export const sync = () =>
+	export const sync = (annotations?: LogAnnotations) =>
 		Effect.gen(function* () {
 			const runtime = yield* Effect.runtime();
-
-			const run = (e: Effect.Effect<void, never, never>) => {
-				// Intentionally ignoring the await here
-				// void runPromise(e);
-				void Runtime.runPromise(runtime)(e);
-			};
-
-			return {
-				info: (...params: Parameters<typeof Logger.info>) =>
-					run(Logger.info(...params)),
-				debug: (...params: Parameters<typeof Logger.debug>) =>
-					run(Logger.debug(...params)),
-				warn: (...params: Parameters<typeof Logger.warn>) =>
-					run(Logger.warn(...params)),
-				error: (...params: Parameters<typeof Logger.error>) =>
-					run(Logger.error(...params)),
-			};
+			return makeSyncLogger(runtime, annotations ?? {});
 		});
 
 	// --
