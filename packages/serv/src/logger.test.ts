@@ -1,5 +1,5 @@
 import { it } from '@effect/vitest';
-import { Array, Effect, Logger as EffectLogger, Layer, LogLevel } from 'effect';
+import { Array as EffectArray, Effect, Logger as EffectLogger, Layer, LogLevel } from 'effect';
 import { describe, expect } from 'vitest';
 import { Logger } from './logger.js';
 
@@ -18,7 +18,7 @@ function makeTestLogger() {
 			annotations[key] = value;
 		}
 		entries.push({
-			message: Array.ensure(options.message).join(' '),
+			message: EffectArray.ensure(options.message).join(' '),
 			logLevel: options.logLevel,
 			annotations,
 		});
