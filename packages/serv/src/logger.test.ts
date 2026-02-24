@@ -1,5 +1,5 @@
 import { it } from '@effect/vitest';
-import { Array, Effect, Layer, Logger as EffectLogger, LogLevel } from 'effect';
+import { Array, Effect, Logger as EffectLogger, Layer, LogLevel } from 'effect';
 import { describe, expect } from 'vitest';
 import { Logger } from './logger.js';
 
