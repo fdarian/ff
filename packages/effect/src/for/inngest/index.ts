@@ -1,10 +1,9 @@
-import { Data, Effect, Layer } from 'effect';
+import { HttpApp } from '@effect/platform';
+import { type Cron, Data, Effect, FiberSet, Layer, Runtime } from 'effect';
 import * as Context from 'effect/Context';
 import * as Inspectable from 'effect/Inspectable';
-import type { Cron } from 'effect';
 import type { Inngest } from 'inngest';
 import { serve } from 'inngest/bun';
-import { HttpApp } from '@effect/platform';
 import { extract } from '../../extract';
 import { runPromiseUnwrapped } from '../../run-promise-unwrapped';
 import { cronToString } from './cron';
@@ -13,9 +12,7 @@ import { wrapStep } from './step';
 export const TagTypeId = Context.TagTypeId;
 export const NodeInspectSymbol = Inspectable.NodeInspectSymbol;
 
-export class InngestError extends Data.TaggedError(
-	'ff-effect/InngestError',
-)<{
+export class InngestError extends Data.TaggedError('ff-effect/InngestError')<{
 	message: string;
 	cause?: unknown;
 }> {}
@@ -115,13 +112,14 @@ export function createInngest<
 		Effect.gen(function* () {
 			const ext_handler = yield* extract(handler);
 			const resolvedTrigger = resolveTrigger<TClient>(trigger);
+			const runPromise = yield* FiberSet.makeRuntimePromise();
 
 			return client.createFunction(
 				config,
 				resolvedTrigger,
 				async (ctx: HandlerContext<TClient>) => {
 					const effectStep = wrapStep(ctx.step, InngestError);
-					return runPromiseUnwrapped(
+					return runPromise(
 						ext_handler({
 							...ctx,
 							step: effectStep,
@@ -143,7 +141,9 @@ export function createInngest<
 	function buildServe(httpOpts: ServeOpts) {
 		return serve({
 			client,
-			functions: httpOpts.functions as unknown as Parameters<typeof serve>[0]['functions'],
+			functions: httpOpts.functions as unknown as Parameters<
+				typeof serve
+			>[0]['functions'],
 			...(httpOpts.servePath != null && { servePath: httpOpts.servePath }),
 			...(httpOpts.signingKey != null && {
 				signingKey: httpOpts.signingKey,
