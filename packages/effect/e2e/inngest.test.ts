@@ -25,91 +25,87 @@ describe.skipIf(!devServerRunning)('inngest integration', () => {
 	const client = new Inngest({ id: 'integration-test', isDev: true });
 	const ig = createInngest(client);
 
-	it.scopedLive(
-		'function executes via inngest dev server',
-		() =>
-			Effect.gen(function* () {
-				const executionLog: string[] = [];
+	it.scopedLive('function executes via inngest dev server', () =>
+		Effect.gen(function* () {
+			const executionLog: string[] = [];
 
-				const fn = yield* ig.createFunction(
-					{ id: 'test-hello' },
-					{ event: 'test/hello' },
-					({ event, step }) =>
-						Effect.gen(function* () {
-							yield* step.run('log-event', () =>
-								Effect.sync(() => {
-									executionLog.push(`received: ${event.data.message}`);
-								}),
-							);
-						}),
-				);
+			const fn = yield* ig.createFunction(
+				{ id: 'test-hello' },
+				{ event: 'test/hello' },
+				({ event, step }) =>
+					Effect.gen(function* () {
+						yield* step.run('log-event', () =>
+							Effect.sync(() => {
+								executionLog.push(`received: ${event.data.message}`);
+							}),
+						);
+					}),
+			);
 
-				const handler = ig.fetchHandler({
-					functions: [fn],
-					servePath: '/api/inngest',
-				});
+			const handler = ig.fetchHandler({
+				functions: [fn],
+				servePath: '/api/inngest',
+			});
 
-				const server = Bun.serve({ port: 0, fetch: handler });
+			const server = Bun.serve({ port: 0, fetch: handler });
 
-				yield* Effect.addFinalizer(() => Effect.sync(() => server.stop(true)));
+			yield* Effect.addFinalizer(() => Effect.sync(() => server.stop(true)));
 
-				yield* HttpClient.put(`http://localhost:${server.port}/api/inngest`);
+			yield* HttpClient.put(`http://localhost:${server.port}/api/inngest`);
 
-				yield* Effect.sleep(1500);
+			yield* Effect.sleep(1500);
 
-				yield* ig.send({ name: 'test/hello', data: { message: 'world' } });
+			yield* ig.send({ name: 'test/hello', data: { message: 'world' } });
 
-				yield* poll(() => executionLog.includes('received: world'), 500, 15_000);
+			yield* poll(() => executionLog.includes('received: world'), 500, 15_000);
 
-				expect(executionLog).toContain('received: world');
-			}).pipe(Effect.provide(ig.layer), Effect.provide(FetchHttpClient.layer)),
+			expect(executionLog).toContain('received: world');
+		}).pipe(Effect.provide(ig.layer), Effect.provide(FetchHttpClient.layer)),
 	);
 
-	it.scopedLive(
-		'step tools work correctly',
-		() =>
-			Effect.gen(function* () {
-				const executionLog: string[] = [];
+	it.scopedLive('step tools work correctly', () =>
+		Effect.gen(function* () {
+			const executionLog: string[] = [];
 
-				const fn = yield* ig.createFunction(
-					{ id: 'test-steps' },
-					{ event: 'test/steps' },
-					({ step }) =>
-						Effect.gen(function* () {
-							const firstResult = yield* step.run('first-step', () =>
-								Effect.succeed('step-one-done'),
-							);
+			const fn = yield* ig.createFunction(
+				{ id: 'test-steps' },
+				{ event: 'test/steps' },
+				({ step }) =>
+					Effect.gen(function* () {
+						const firstResult = yield* step.run('first-step', () =>
+							Effect.succeed('step-one-done'),
+						);
 
-							yield* step.run('second-step', () =>
-								Effect.sync(() => {
-									executionLog.push(`second step got: ${firstResult}`);
-								}),
-							);
-						}),
-				);
+						yield* step.run('second-step', () =>
+							Effect.sync(() => {
+								executionLog.push(`second step got: ${firstResult}`);
+							}),
+						);
+					}),
+			);
 
-				const handler = ig.fetchHandler({
-					functions: [fn],
-					servePath: '/api/inngest',
-				});
+			const handler = ig.fetchHandler({
+				functions: [fn],
+				servePath: '/api/inngest',
+			});
 
-				const server = Bun.serve({ port: 0, fetch: handler });
+			const server = Bun.serve({ port: 0, fetch: handler });
 
-				yield* Effect.addFinalizer(() => Effect.sync(() => server.stop(true)));
+			yield* Effect.addFinalizer(() => Effect.sync(() => server.stop(true)));
 
-				yield* HttpClient.put(`http://localhost:${server.port}/api/inngest`);
+			yield* HttpClient.put(`http://localhost:${server.port}/api/inngest`);
 
-				yield* Effect.sleep(1500);
+			yield* Effect.sleep(1500);
 
-				yield* ig.send({ name: 'test/steps', data: {} });
+			yield* ig.send({ name: 'test/steps', data: {} });
 
-				yield* poll(
-					() => executionLog.includes('second step got: step-one-done'),
-					500,
-					15_000,
-				);
+			yield* poll(
+				() => executionLog.includes('second step got: step-one-done'),
+				500,
+				15_000,
+			);
 
-				expect(executionLog).toContain('second step got: step-one-done');
-			}).pipe(Effect.provide(ig.layer), Effect.provide(FetchHttpClient.layer)),
+			expect(executionLog).toContain('second step got: step-one-done');
+		}).pipe(Effect.provide(ig.layer), Effect.provide(FetchHttpClient.layer)),
 	);
 });

@@ -3,7 +3,9 @@ import { Option } from 'effect';
 
 function fieldToString(field: ReadonlySet<number>, max: number) {
 	if (field.size === 0 || field.size === max) return '*';
-	return Array.from(field).sort((a, b) => a - b).join(',');
+	return Array.from(field)
+		.sort((a, b) => a - b)
+		.join(',');
 }
 
 export function cronToString(cron: Cron.Cron) {

@@ -38,10 +38,9 @@ type TriggerInput<TClient extends AnyInngest> =
 	| FunctionTrigger<TClient>
 	| CronTrigger;
 
-type ExtractTriggerName<
-	TClient extends AnyInngest,
-	T,
-> = T extends { event: infer E extends keyof GetEvents<TClient, true> & string }
+type ExtractTriggerName<TClient extends AnyInngest, T> = T extends {
+	event: infer E extends keyof GetEvents<TClient, true> & string;
+}
 	? E
 	: keyof GetEvents<TClient, true> & string;
 
@@ -74,7 +73,8 @@ function resolveTrigger<TClient extends AnyInngest>(
 
 type EffectHandlerCtx<
 	TClient extends AnyInngest,
-	TTriggerName extends keyof GetEvents<TClient, true> & string = keyof GetEvents<TClient, true> & string,
+	TTriggerName extends keyof GetEvents<TClient, true> &
+		string = keyof GetEvents<TClient, true> & string,
 > = Omit<GetFunctionInput<TClient, TTriggerName>, 'step'> & {
 	step: ReturnType<typeof wrapStep<unknown>>;
 };
@@ -103,12 +103,7 @@ export function createInngest<
 			});
 		});
 
-	const createFunction = <
-		TTrigger extends TriggerInput<TClient>,
-		A,
-		E,
-		R,
-	>(
+	const createFunction = <TTrigger extends TriggerInput<TClient>, A, E, R>(
 		config: FunctionConfig<TClient>,
 		trigger: TTrigger,
 		handler: (
@@ -124,7 +119,7 @@ export function createInngest<
 				config,
 				resolvedTrigger,
 				// biome-ignore lint/suspicious/noExplicitAny: inngest middleware produces unresolvable context type
-			async (ctx: any) => {
+				async (ctx: any) => {
 					const effectStep = wrapStep(ctx.step);
 					return runPromise(
 						ext_handler({
