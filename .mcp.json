@@ -1,0 +1,15 @@
+{
+	"mcpServers": {
+		"lsp-typescript": {
+			"command": "mcp-language-server",
+			"args": [
+				"--workspace",
+				".",
+				"--lsp",
+				"typescript-language-server",
+				"--",
+				"--stdio"
+			]
+		}
+	}
+}
