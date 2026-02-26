@@ -1,5 +1,5 @@
 import { Cron, Duration, Effect } from 'effect';
-import { EventSchemas, Inngest } from 'inngest';
+import { EventSchemas, Inngest as InngestSdk } from 'inngest';
 import { describe, expect, expectTypeOf, test, vi } from 'vitest';
 import { cronToString } from './cron';
 import { createInngest } from './index';
@@ -90,63 +90,70 @@ describe('wrapStep', () => {
 
 describe('createInngest', () => {
 	test('creates builder with Tag and layer', () => {
-		const client = new Inngest({ id: 'test' });
-		const ig = createInngest(client);
+		const client = new InngestSdk({ id: 'test' });
+		const Inngest = createInngest(Effect.succeed(client));
 
-		expect(ig.Tag).toBeDefined();
-		expect(ig.client).toBe(client);
-		expect(ig.layer).toBeDefined();
+		expect(Inngest.Tag).toBeDefined();
+		expect(Inngest.layer).toBeDefined();
 	});
 
 	test('custom tagId', () => {
-		const client = new Inngest({ id: 'test' });
-		const ig = createInngest(client, { tagId: 'MyInngest' });
+		const client = new InngestSdk({ id: 'test' });
+		const Inngest = createInngest(Effect.succeed(client), {
+			tagId: 'MyInngest',
+		});
 
-		expect(ig.Tag).toBeDefined();
+		expect(Inngest.Tag).toBeDefined();
 	});
 
 	test('createFunction returns an Effect', async () => {
-		const client = new Inngest({ id: 'test' });
-		const ig = createInngest(client);
+		const client = new InngestSdk({ id: 'test' });
+		const Inngest = createInngest(Effect.succeed(client));
 
-		const fnEffect = ig.createFunction(
+		const fnEffect = Inngest.createFunction(
 			{ id: 'my-fn' },
 			{ event: 'test/event' },
 			() => Effect.succeed('done'),
 		);
 
-		const fn = await Effect.runPromise(fnEffect.pipe(Effect.scoped));
+		const fn = await Effect.runPromise(
+			fnEffect.pipe(Effect.provide(Inngest.layer), Effect.scoped),
+		);
 		expect(fn).toBeDefined();
 	});
 
-	test('httpHandler returns a fetch handler', () => {
-		const client = new Inngest({ id: 'test' });
-		const ig = createInngest(client);
+	test('fetchHandler returns a fetch handler', async () => {
+		const client = new InngestSdk({ id: 'test' });
+		const Inngest = createInngest(Effect.succeed(client));
 
-		const handler = ig.fetchHandler({ functions: [] });
+		const handler = await Effect.runPromise(
+			Inngest.fetchHandler({ functions: [] }).pipe(Effect.provide(Inngest.layer)),
+		);
 		expect(typeof handler).toBe('function');
 	});
 
-	test('httpHandler returns an Effect HttpApp', () => {
-		const client = new Inngest({ id: 'test' });
-		const ig = createInngest(client);
+	test('httpHandler returns an Effect HttpApp', async () => {
+		const client = new InngestSdk({ id: 'test' });
+		const Inngest = createInngest(Effect.succeed(client));
 
-		const app = ig.httpHandler({ functions: [] });
+		const app = await Effect.runPromise(
+			Inngest.httpHandler({ functions: [] }).pipe(Effect.provide(Inngest.layer)),
+		);
 		expect(Effect.isEffect(app)).toBe(true);
 	});
 
 	test('event schema types flow through', async () => {
 		type Data = { email: string };
 
-		const client = new Inngest({
+		const client = new InngestSdk({
 			id: 'typed',
 			schemas: new EventSchemas().fromRecord<{
 				'user.signup': { data: Data };
 			}>(),
 		});
-		const ig = createInngest(client);
+		const Inngest = createInngest(Effect.succeed(client));
 
-		const fnEffect = ig.createFunction(
+		const fnEffect = Inngest.createFunction(
 			{ id: 'on-signup' },
 			{ event: 'user.signup' },
 			({ event }) => {
@@ -158,7 +165,9 @@ describe('createInngest', () => {
 			},
 		);
 
-		const fn = await Effect.runPromise(fnEffect.pipe(Effect.scoped));
+		const fn = await Effect.runPromise(
+			fnEffect.pipe(Effect.provide(Inngest.layer), Effect.scoped),
+		);
 		expect(fn).toBeDefined();
 	});
 });

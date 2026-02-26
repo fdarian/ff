@@ -1,7 +1,7 @@
 import { FetchHttpClient, HttpClient } from '@effect/platform';
 import { it } from '@effect/vitest';
 import { Effect, Schedule } from 'effect';
-import { Inngest } from 'inngest';
+import { Inngest as InngestSdk } from 'inngest';
 import { describe, expect } from 'vitest';
 import { createInngest } from '../src/for/inngest';
 
@@ -22,14 +22,14 @@ const devServerRunning = await Effect.runPromise(
 );
 
 describe.skipIf(!devServerRunning)('inngest integration', () => {
-	const client = new Inngest({ id: 'integration-test', isDev: true });
-	const ig = createInngest(client);
+	const client = new InngestSdk({ id: 'integration-test', isDev: true });
+	const Inngest = createInngest(Effect.succeed(client));
 
 	it.scopedLive('function executes via inngest dev server', () =>
 		Effect.gen(function* () {
 			const executionLog: string[] = [];
 
-			const fn = yield* ig.createFunction(
+			const fn = yield* Inngest.createFunction(
 				{ id: 'test-hello' },
 				{ event: 'test/hello' },
 				({ event, step }) =>
@@ -42,7 +42,7 @@ describe.skipIf(!devServerRunning)('inngest integration', () => {
 					}),
 			);
 
-			const handler = ig.fetchHandler({
+			const handler = yield* Inngest.fetchHandler({
 				functions: [fn],
 				servePath: '/api/inngest',
 			});
@@ -55,19 +55,19 @@ describe.skipIf(!devServerRunning)('inngest integration', () => {
 
 			yield* Effect.sleep(1500);
 
-			yield* ig.send({ name: 'test/hello', data: { message: 'world' } });
+			yield* Inngest.send({ name: 'test/hello', data: { message: 'world' } });
 
 			yield* poll(() => executionLog.includes('received: world'), 500, 15_000);
 
 			expect(executionLog).toContain('received: world');
-		}).pipe(Effect.provide(ig.layer), Effect.provide(FetchHttpClient.layer)),
+		}).pipe(Effect.provide(Inngest.layer), Effect.provide(FetchHttpClient.layer)),
 	);
 
 	it.scopedLive('step tools work correctly', () =>
 		Effect.gen(function* () {
 			const executionLog: string[] = [];
 
-			const fn = yield* ig.createFunction(
+			const fn = yield* Inngest.createFunction(
 				{ id: 'test-steps' },
 				{ event: 'test/steps' },
 				({ step }) =>
@@ -84,7 +84,7 @@ describe.skipIf(!devServerRunning)('inngest integration', () => {
 					}),
 			);
 
-			const handler = ig.fetchHandler({
+			const handler = yield* Inngest.fetchHandler({
 				functions: [fn],
 				servePath: '/api/inngest',
 			});
@@ -97,7 +97,7 @@ describe.skipIf(!devServerRunning)('inngest integration', () => {
 
 			yield* Effect.sleep(1500);
 
-			yield* ig.send({ name: 'test/steps', data: {} });
+			yield* Inngest.send({ name: 'test/steps', data: {} });
 
 			yield* poll(
 				() => executionLog.includes('second step got: step-one-done'),
@@ -106,6 +106,6 @@ describe.skipIf(!devServerRunning)('inngest integration', () => {
 			);
 
 			expect(executionLog).toContain('second step got: step-one-done');
-		}).pipe(Effect.provide(ig.layer), Effect.provide(FetchHttpClient.layer)),
+		}).pipe(Effect.provide(Inngest.layer), Effect.provide(FetchHttpClient.layer)),
 	);
 });

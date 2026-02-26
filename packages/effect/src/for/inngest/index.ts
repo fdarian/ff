@@ -83,8 +83,10 @@ const defaultPrefix = '@ff-effect/Inngest' as const;
 
 export function createInngest<
 	TClient extends AnyInngest,
+	E,
+	R,
 	T extends string = typeof defaultPrefix,
->(client: TClient, opts?: { tagId?: T }) {
+>(createClient: Effect.Effect<TClient, E, R>, opts?: { tagId?: T }) {
 	const tagId = (opts?.tagId ?? defaultPrefix) as T;
 
 	type Tag = typeof tagId;
@@ -103,19 +105,20 @@ export function createInngest<
 			});
 		});
 
-	const createFunction = <TTrigger extends TriggerInput<TClient>, A, E, R>(
+	const createFunction = <TTrigger extends TriggerInput<TClient>, A, EH, RH>(
 		config: FunctionConfig<TClient>,
 		trigger: TTrigger,
 		handler: (
 			ctx: EffectHandlerCtx<TClient, ExtractTriggerName<TClient, TTrigger>>,
-		) => Effect.Effect<A, E, R>,
+		) => Effect.Effect<A, EH, RH>,
 	) =>
 		Effect.gen(function* () {
+			const c = yield* Tag;
 			const ext_handler = yield* extract(handler);
 			const resolvedTrigger = resolveTrigger<TClient>(trigger);
 			const runPromise = yield* FiberSet.makeRuntimePromise();
 
-			return client.createFunction(
+			return c.createFunction(
 				config,
 				resolvedTrigger,
 				// biome-ignore lint/suspicious/noExplicitAny: inngest middleware produces unresolvable context type
@@ -143,7 +146,7 @@ export function createInngest<
 		streaming?: 'allow' | 'force' | false;
 	};
 
-	function buildServe(httpOpts: ServeOpts) {
+	function buildServe(client: TClient, httpOpts: ServeOpts) {
 		return serve({
 			client,
 			functions: httpOpts.functions as unknown as Parameters<
@@ -161,17 +164,23 @@ export function createInngest<
 		});
 	}
 
-	const fetchHandler = (httpOpts: ServeOpts) => buildServe(httpOpts);
+	const fetchHandler = (httpOpts: ServeOpts) =>
+		Effect.gen(function* () {
+			const c = yield* Tag;
+			return buildServe(c, httpOpts);
+		});
 
 	const httpHandler = (httpOpts: ServeOpts) =>
-		HttpApp.fromWebHandler(buildServe(httpOpts));
+		Effect.gen(function* () {
+			const c = yield* Tag;
+			return HttpApp.fromWebHandler(buildServe(c, httpOpts));
+		});
 
 	return {
 		Tag,
-		client,
-		layer: Layer.succeed(Tag, client),
-		send,
+		layer: Layer.effect(Tag, createClient),
 		createFunction,
+		send,
 		fetchHandler,
 		httpHandler,
 	};

@@ -6,20 +6,22 @@ Effect wrapper for the [Inngest TypeScript SDK](https://www.inngest.com/docs). P
 
 ```ts
 import { Effect } from 'effect'
-import { Inngest, EventSchemas } from 'inngest'
+import { Inngest as InngestSdk, EventSchemas } from 'inngest'
 import { createInngest } from 'ff-effect/for/inngest'
 
-const client = new Inngest({
-  id: 'my-app',
-  schemas: new EventSchemas().fromZod({
-    'user.signup': { data: z.object({ email: z.string() }) },
-  }),
-})
-
-const ig = createInngest(client)
+const Inngest = createInngest(
+  Effect.succeed(
+    new InngestSdk({
+      id: 'my-app',
+      schemas: new EventSchemas().fromZod({
+        'user.signup': { data: z.object({ email: z.string() }) },
+      }),
+    })
+  )
+)
 
 const program = Effect.gen(function* () {
-  const fn = yield* ig.createFunction(
+  const fn = yield* Inngest.createFunction(
     { id: 'on-signup' },
     { event: 'user.signup' },
     ({ event, step }) => Effect.gen(function* () {
@@ -29,35 +31,34 @@ const program = Effect.gen(function* () {
     })
   )
 
-  const handler = ig.fetchHandler({ functions: [fn] })
+  const handler = yield* Inngest.fetchHandler({ functions: [fn] })
   Bun.serve({ fetch: handler })
 })
 
-await Effect.runPromise(program.pipe(Effect.provide(ig.layer)))
+await Effect.runPromise(program.pipe(Effect.provide(Inngest.layer)))
 ```
 
 ## `createInngest`
 
-Creates an Effect-based wrapper around an Inngest client.
+Creates an Effect-based wrapper around an Inngest client. Accepts an `Effect` that produces the client.
 
 ```ts
-const ig = createInngest(client)
-const ig = createInngest(client, { tagId: 'MyInngest' })
+const Inngest = createInngest(Effect.succeed(client))
+const Inngest = createInngest(Effect.succeed(client), { tagId: 'MyInngest' })
 ```
 
 Returns:
 - `Tag` — `Context.Tag` for the Inngest client
-- `client` — the original Inngest client
-- `layer` — `Layer.succeed(Tag, client)` for providing via context
+- `layer` — `Layer.effect(Tag, createClient)` for providing via context
 - `send(payload)` — send events (see [Sending Events](#sending-events))
 - `createFunction(config, trigger, handler)` — create functions (see [Creating Functions](#creating-functions))
-- `httpHandler(opts)` — Effect `HttpApp.Default` handler (see [HTTP Handler](#http-handler))
-- `fetchHandler(opts)` — raw fetch handler (see [Fetch Handler](#fetch-handler))
+- `httpHandler(opts)` — Effect that resolves to `HttpApp.Default` (see [HTTP Handler](#http-handler))
+- `fetchHandler(opts)` — Effect that resolves to a fetch handler (see [Fetch Handler](#fetch-handler))
 
 ## Creating Functions
 
 ```ts
-const fn = yield* ig.createFunction(
+const fn = yield* Inngest.createFunction(
   { id: 'process-order', retries: 5 },
   { event: 'order.created' },
   ({ event, step, runId, attempt }) => Effect.gen(function* () {
@@ -145,14 +146,14 @@ yield* step.sendEvent('notify', {
 ### Event trigger
 
 ```ts
-ig.createFunction(config, { event: 'user.signup' }, handler)
-ig.createFunction(config, { event: 'user.signup', if: 'event.data.premium == true' }, handler)
+Inngest.createFunction(config, { event: 'user.signup' }, handler)
+Inngest.createFunction(config, { event: 'user.signup', if: 'event.data.premium == true' }, handler)
 ```
 
 ### Cron trigger (string)
 
 ```ts
-ig.createFunction(config, { cron: '0 9 * * *' }, handler)
+Inngest.createFunction(config, { cron: '0 9 * * *' }, handler)
 ```
 
 ### Cron trigger (Effect `Cron.Cron`)
@@ -160,7 +161,7 @@ ig.createFunction(config, { cron: '0 9 * * *' }, handler)
 ```ts
 import { Cron } from 'effect'
 
-ig.createFunction(config, { cron: Cron.unsafeParse('0 9 * * *') }, handler)
+Inngest.createFunction(config, { cron: Cron.unsafeParse('0 9 * * *') }, handler)
 ```
 
 ## Event Schemas
@@ -168,7 +169,7 @@ ig.createFunction(config, { cron: Cron.unsafeParse('0 9 * * *') }, handler)
 Event types flow automatically through Inngest SDK's generics:
 
 ```ts
-const client = new Inngest({
+const client = new InngestSdk({
   id: 'my-app',
   schemas: new EventSchemas().fromZod({
     'user.signup': { data: z.object({ email: z.string() }) },
@@ -176,9 +177,9 @@ const client = new Inngest({
   }),
 })
 
-const ig = createInngest(client)
+const Inngest = createInngest(Effect.succeed(client))
 
-ig.createFunction(
+Inngest.createFunction(
   { id: 'on-signup' },
   { event: 'user.signup' },
   ({ event }) => Effect.gen(function* () {
@@ -193,7 +194,7 @@ ig.createFunction(
 Returns an Effect `HttpApp.Default` (from `@effect/platform`) for serving Inngest functions. Use this when composing with Effect's HTTP server stack.
 
 ```ts
-const app = ig.httpHandler({
+const app = yield* Inngest.httpHandler({
   functions: [fn1, fn2],
   servePath: '/api/inngest',  // optional, default: /api/inngest
 })
@@ -214,7 +215,7 @@ HttpRouter.empty.pipe(
 Returns a raw fetch handler `(Request) => Promise<Response>` for direct use with `Bun.serve` or ff-serv.
 
 ```ts
-const handler = ig.fetchHandler({
+const handler = yield* Inngest.fetchHandler({
   functions: [fn1, fn2],
   servePath: '/api/inngest',
 })
@@ -242,13 +243,13 @@ basicHandler(
 Send events outside of functions using `send()`. Requires the Inngest Tag in the Effect context.
 
 ```ts
-yield* ig.send({ name: 'user.signup', data: { email: 'user@example.com' } })
+yield* Inngest.send({ name: 'user.signup', data: { email: 'user@example.com' } })
 ```
 
-Provide the client via `ig.layer`:
+Provide the client via `Inngest.layer`:
 
 ```ts
 Effect.gen(function* () {
-  yield* ig.send({ name: 'user.signup', data: { email: 'user@example.com' } })
-}).pipe(Effect.provide(ig.layer))
+  yield* Inngest.send({ name: 'user.signup', data: { email: 'user@example.com' } })
+}).pipe(Effect.provide(Inngest.layer))
 ```
