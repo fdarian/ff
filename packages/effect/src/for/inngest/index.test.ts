@@ -1,9 +1,9 @@
 import { Cron, Duration, Effect } from 'effect';
-import { Inngest, EventSchemas } from 'inngest';
+import { EventSchemas, Inngest } from 'inngest';
 import { describe, expect, test, vi } from 'vitest';
 import { cronToString } from './cron';
+import { createInngest } from './index';
 import { wrapStep } from './step';
-import { createInngest, InngestError } from './index';
 
 describe('cronToString', () => {
 	test('converts simple cron', () => {
@@ -42,7 +42,7 @@ describe('wrapStep', () => {
 			fn(),
 		);
 
-		const wrapped = wrapStep(mockStep, InngestError);
+		const wrapped = wrapStep(mockStep);
 		const result = await Effect.runPromise(
 			wrapped.run('test', () => Effect.succeed(42)),
 		);
@@ -53,7 +53,7 @@ describe('wrapStep', () => {
 	test('step.run wraps errors in InngestError', async () => {
 		mockStep.run.mockRejectedValue(new Error('boom'));
 
-		const wrapped = wrapStep(mockStep, InngestError);
+		const wrapped = wrapStep(mockStep);
 		const exit = await Effect.runPromiseExit(
 			wrapped.run('fail', () => Effect.succeed(1)),
 		);
@@ -63,7 +63,7 @@ describe('wrapStep', () => {
 	test('step.sleep converts Duration to ms', async () => {
 		mockStep.sleep.mockResolvedValue(undefined);
 
-		const wrapped = wrapStep(mockStep, InngestError);
+		const wrapped = wrapStep(mockStep);
 		await Effect.runPromise(wrapped.sleep('wait', Duration.hours(1)));
 		expect(mockStep.sleep).toHaveBeenCalledWith('wait', 3600000);
 	});
@@ -71,7 +71,7 @@ describe('wrapStep', () => {
 	test('step.sleepUntil passes through', async () => {
 		mockStep.sleepUntil.mockResolvedValue(undefined);
 
-		const wrapped = wrapStep(mockStep, InngestError);
+		const wrapped = wrapStep(mockStep);
 		const date = new Date('2024-01-01');
 		await Effect.runPromise(wrapped.sleepUntil('until', date));
 		expect(mockStep.sleepUntil).toHaveBeenCalledWith('until', date);
@@ -80,7 +80,7 @@ describe('wrapStep', () => {
 	test('step.sendEvent returns ids', async () => {
 		mockStep.sendEvent.mockResolvedValue({ ids: ['id1'] });
 
-		const wrapped = wrapStep(mockStep, InngestError);
+		const wrapped = wrapStep(mockStep);
 		const result = await Effect.runPromise(
 			wrapped.sendEvent('send', { name: 'test', data: {} }),
 		);
@@ -118,7 +118,7 @@ describe('createInngest', () => {
 				}),
 		);
 
-		const fn = await Effect.runPromise(fnEffect);
+		const fn = await Effect.runPromise(fnEffect.pipe(Effect.scoped));
 		expect(fn).toBeDefined();
 	});
 
@@ -157,7 +157,7 @@ describe('createInngest', () => {
 				}),
 		);
 
-		const fn = await Effect.runPromise(fnEffect);
+		const fn = await Effect.runPromise(fnEffect.pipe(Effect.scoped));
 		expect(fn).toBeDefined();
 	});
 });
