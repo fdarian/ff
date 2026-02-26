@@ -112,10 +112,7 @@ describe('createInngest', () => {
 		const fnEffect = ig.createFunction(
 			{ id: 'my-fn' },
 			{ event: 'test/event' },
-			({ step }) =>
-				Effect.gen(function* () {
-					return 'done';
-				}),
+			() => Effect.succeed('done'),
 		);
 
 		const fn = await Effect.runPromise(fnEffect.pipe(Effect.scoped));
@@ -152,14 +149,13 @@ describe('createInngest', () => {
 		const fnEffect = ig.createFunction(
 			{ id: 'on-signup' },
 			{ event: 'user.signup' },
-			({ event }) =>
-				Effect.gen(function* () {
-					expectTypeOf(event).toHaveProperty('name');
-					expectTypeOf(event).toHaveProperty('data');
-					expectTypeOf(event.data).toEqualTypeOf<Data>();
-					const email: string = event.data.email;
-					return email;
-				}),
+			({ event }) => {
+				expectTypeOf(event).toHaveProperty('name');
+				expectTypeOf(event).toHaveProperty('data');
+				expectTypeOf(event.data).toEqualTypeOf<Data>();
+				const email: string = event.data.email;
+				return Effect.succeed(email);
+			},
 		);
 
 		const fn = await Effect.runPromise(fnEffect.pipe(Effect.scoped));
