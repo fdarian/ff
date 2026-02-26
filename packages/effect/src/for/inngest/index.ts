@@ -1,11 +1,10 @@
 import { HttpApp } from '@effect/platform';
-import { type Cron, Data, Effect, FiberSet, Layer, Runtime } from 'effect';
+import { type Cron, Data, Effect, FiberSet, Layer } from 'effect';
 import * as Context from 'effect/Context';
 import * as Inspectable from 'effect/Inspectable';
 import type { Inngest } from 'inngest';
 import { serve } from 'inngest/bun';
 import { extract } from '../../extract';
-import { runPromiseUnwrapped } from '../../run-promise-unwrapped';
 import { cronToString } from './cron';
 import { wrapStep } from './step';
 
@@ -118,7 +117,7 @@ export function createInngest<
 				config,
 				resolvedTrigger,
 				async (ctx: HandlerContext<TClient>) => {
-					const effectStep = wrapStep(ctx.step, InngestError);
+					const effectStep = wrapStep(ctx.step);
 					return runPromise(
 						ext_handler({
 							...ctx,

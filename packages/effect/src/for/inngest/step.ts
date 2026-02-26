@@ -1,6 +1,6 @@
 import { Duration, Effect } from 'effect';
-import type { InngestError } from './index';
 import { runPromiseUnwrapped } from '../../run-promise-unwrapped';
+import { InngestError } from './index';
 
 type OriginalStep = {
 	run: (id: string, fn: () => Promise<unknown>) => Promise<unknown>;
@@ -13,10 +13,7 @@ type OriginalStep = {
 
 export type WrappedStep<TStep> = ReturnType<typeof wrapStep<TStep>>;
 
-export function wrapStep<TStep>(
-	step: TStep,
-	InngestError: new (props: { message: string; cause?: unknown }) => InngestError,
-) {
+export function wrapStep<TStep>(step: TStep) {
 	const s = step as unknown as OriginalStep;
 
 	return {
@@ -29,8 +26,7 @@ export function wrapStep<TStep>(
 
 		sleep: (id: string, duration: Duration.DurationInput) =>
 			Effect.tryPromise({
-				try: () =>
-					s.sleep(id, Duration.toMillis(Duration.decode(duration))),
+				try: () => s.sleep(id, Duration.toMillis(Duration.decode(duration))),
 				catch: (cause) =>
 					new InngestError({
 						message: `Step sleep "${id}" failed`,
