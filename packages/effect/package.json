@@ -14,7 +14,8 @@
 		"build": "tsup",
 		"check:tsc": "tsgo --noEmit",
 		"check:lint": "biome check",
-		"test": "bun -b vitest run",
+		"test": "bun -b vitest run --project unit",
+		"test:e2e": "bun -b vitest run --project e2e",
 		"dev": "tsup --watch"
 	},
 	"devDependencies": {
