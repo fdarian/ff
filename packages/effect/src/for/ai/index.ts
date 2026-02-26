@@ -1,6 +1,8 @@
 import * as Ai from 'ai';
 import { Data, Effect, FiberSet, type Scope } from 'effect';
 
+export { describe, effectSchema } from './schema';
+
 export class AiError extends Data.TaggedError('ff-effect/AiError')<{
 	message: string;
 	cause?: unknown;
