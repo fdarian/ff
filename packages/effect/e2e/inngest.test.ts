@@ -60,7 +60,10 @@ describe.skipIf(!devServerRunning)('inngest integration', () => {
 			yield* poll(() => executionLog.includes('received: world'), 500, 15_000);
 
 			expect(executionLog).toContain('received: world');
-		}).pipe(Effect.provide(Inngest.layer), Effect.provide(FetchHttpClient.layer)),
+		}).pipe(
+			Effect.provide(Inngest.layer),
+			Effect.provide(FetchHttpClient.layer),
+		),
 	);
 
 	it.scopedLive('step tools work correctly', () =>
@@ -106,6 +109,9 @@ describe.skipIf(!devServerRunning)('inngest integration', () => {
 			);
 
 			expect(executionLog).toContain('second step got: step-one-done');
-		}).pipe(Effect.provide(Inngest.layer), Effect.provide(FetchHttpClient.layer)),
+		}).pipe(
+			Effect.provide(Inngest.layer),
+			Effect.provide(FetchHttpClient.layer),
+		),
 	);
 });

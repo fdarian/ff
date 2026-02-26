@@ -127,7 +127,9 @@ describe('createInngest', () => {
 		const Inngest = createInngest(Effect.succeed(client));
 
 		const handler = await Effect.runPromise(
-			Inngest.fetchHandler({ functions: [] }).pipe(Effect.provide(Inngest.layer)),
+			Inngest.fetchHandler({ functions: [] }).pipe(
+				Effect.provide(Inngest.layer),
+			),
 		);
 		expect(typeof handler).toBe('function');
 	});
@@ -137,7 +139,9 @@ describe('createInngest', () => {
 		const Inngest = createInngest(Effect.succeed(client));
 
 		const app = await Effect.runPromise(
-			Inngest.httpHandler({ functions: [] }).pipe(Effect.provide(Inngest.layer)),
+			Inngest.httpHandler({ functions: [] }).pipe(
+				Effect.provide(Inngest.layer),
+			),
 		);
 		expect(Effect.isEffect(app)).toBe(true);
 	});
