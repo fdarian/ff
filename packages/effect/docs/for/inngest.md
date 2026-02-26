@@ -189,12 +189,33 @@ ig.createFunction(
 
 ## HTTP Handler
 
-Creates a fetch handler for serving Inngest functions.
+Returns an Effect `HttpApp.Default` (from `@effect/platform`) for serving Inngest functions. Use this when composing with Effect's HTTP server stack.
 
 ```ts
-const handler = ig.httpHandler({
+const app = ig.httpHandler({
   functions: [fn1, fn2],
   servePath: '/api/inngest',  // optional, default: /api/inngest
+})
+```
+
+### With `@effect/platform` HTTP server
+
+```ts
+import { HttpRouter, HttpServer } from '@effect/platform'
+
+HttpRouter.empty.pipe(
+  HttpRouter.mountApp('/api/inngest', app),
+)
+```
+
+## Fetch Handler
+
+Returns a raw fetch handler `(Request) => Promise<Response>` for direct use with `Bun.serve` or ff-serv.
+
+```ts
+const handler = ig.fetchHandler({
+  functions: [fn1, fn2],
+  servePath: '/api/inngest',
 })
 ```
 

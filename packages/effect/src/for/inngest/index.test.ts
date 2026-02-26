@@ -126,8 +126,16 @@ describe('createInngest', () => {
 		const client = new Inngest({ id: 'test' });
 		const ig = createInngest(client);
 
-		const handler = ig.httpHandler({ functions: [] });
+		const handler = ig.fetchHandler({ functions: [] });
 		expect(typeof handler).toBe('function');
+	});
+
+	test('httpHandler returns an Effect HttpApp', () => {
+		const client = new Inngest({ id: 'test' });
+		const ig = createInngest(client);
+
+		const app = ig.httpHandler({ functions: [] });
+		expect(Effect.isEffect(app)).toBe(true);
 	});
 
 	test('event schema types flow through', async () => {

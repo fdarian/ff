@@ -4,6 +4,7 @@ import * as Inspectable from 'effect/Inspectable';
 import type { Cron } from 'effect';
 import type { Inngest } from 'inngest';
 import { serve } from 'inngest/bun';
+import { HttpApp } from '@effect/platform';
 import { extract } from '../../extract';
 import { runPromiseUnwrapped } from '../../run-promise-unwrapped';
 import { cronToString } from './cron';
@@ -130,15 +131,17 @@ export function createInngest<
 			) as unknown as InngestFunction;
 		});
 
-	const httpHandler = (httpOpts: {
+	type ServeOpts = {
 		functions: InngestFunction[];
 		servePath?: string;
 		signingKey?: string;
 		signingKeyFallback?: string;
 		logLevel?: 'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'silent';
 		streaming?: 'allow' | 'force' | false;
-	}) =>
-		serve({
+	};
+
+	function buildServe(httpOpts: ServeOpts) {
+		return serve({
 			client,
 			functions: httpOpts.functions as unknown as Parameters<typeof serve>[0]['functions'],
 			...(httpOpts.servePath != null && { servePath: httpOpts.servePath }),
@@ -151,6 +154,12 @@ export function createInngest<
 			...(httpOpts.logLevel != null && { logLevel: httpOpts.logLevel }),
 			...(httpOpts.streaming != null && { streaming: httpOpts.streaming }),
 		});
+	}
+
+	const fetchHandler = (httpOpts: ServeOpts) => buildServe(httpOpts);
+
+	const httpHandler = (httpOpts: ServeOpts) =>
+		HttpApp.fromWebHandler(buildServe(httpOpts));
 
 	return {
 		Tag,
@@ -158,6 +167,7 @@ export function createInngest<
 		layer: Layer.succeed(Tag, client),
 		send,
 		createFunction,
+		fetchHandler,
 		httpHandler,
 	};
 }
