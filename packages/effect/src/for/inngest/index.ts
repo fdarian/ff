@@ -2,7 +2,7 @@ import { HttpApp } from '@effect/platform';
 import { type Cron, Data, Effect, FiberSet, Layer } from 'effect';
 import * as Context from 'effect/Context';
 import * as Inspectable from 'effect/Inspectable';
-import type { Inngest } from 'inngest';
+import type { GetEvents, GetFunctionInput, Inngest } from 'inngest';
 import { serve } from 'inngest/bun';
 import { extract } from '../../extract';
 import { cronToString } from './cron';
@@ -34,16 +34,16 @@ type FunctionConfig<TClient extends AnyInngest> =
 type FunctionTrigger<TClient extends AnyInngest> =
 	CreateFunctionParams<TClient>[1];
 
-type FunctionHandler<TClient extends AnyInngest> =
-	CreateFunctionParams<TClient>[2];
-
-type HandlerContext<TClient extends AnyInngest> = Parameters<
-	FunctionHandler<TClient>
->[0];
-
 type TriggerInput<TClient extends AnyInngest> =
 	| FunctionTrigger<TClient>
 	| CronTrigger;
+
+type ExtractTriggerName<
+	TClient extends AnyInngest,
+	T,
+> = T extends { event: infer E extends keyof GetEvents<TClient, true> & string }
+	? E
+	: keyof GetEvents<TClient, true> & string;
 
 type CronTrigger = { cron: Cron.Cron };
 
@@ -72,11 +72,11 @@ function resolveTrigger<TClient extends AnyInngest>(
 	return trigger as FunctionTrigger<TClient>;
 }
 
-type EffectHandlerCtx<TClient extends AnyInngest> = Omit<
-	HandlerContext<TClient>,
-	'step'
-> & {
-	step: ReturnType<typeof wrapStep<HandlerContext<TClient>['step']>>;
+type EffectHandlerCtx<
+	TClient extends AnyInngest,
+	TTriggerName extends keyof GetEvents<TClient, true> & string = keyof GetEvents<TClient, true> & string,
+> = Omit<GetFunctionInput<TClient, TTriggerName>, 'step'> & {
+	step: ReturnType<typeof wrapStep<unknown>>;
 };
 
 const defaultPrefix = '@ff-effect/Inngest' as const;
@@ -103,10 +103,17 @@ export function createInngest<
 			});
 		});
 
-	const createFunction = <A, E, R>(
+	const createFunction = <
+		TTrigger extends TriggerInput<TClient>,
+		A,
+		E,
+		R,
+	>(
 		config: FunctionConfig<TClient>,
-		trigger: TriggerInput<TClient>,
-		handler: (ctx: EffectHandlerCtx<TClient>) => Effect.Effect<A, E, R>,
+		trigger: TTrigger,
+		handler: (
+			ctx: EffectHandlerCtx<TClient, ExtractTriggerName<TClient, TTrigger>>,
+		) => Effect.Effect<A, E, R>,
 	) =>
 		Effect.gen(function* () {
 			const ext_handler = yield* extract(handler);
@@ -116,13 +123,17 @@ export function createInngest<
 			return client.createFunction(
 				config,
 				resolvedTrigger,
-				async (ctx: HandlerContext<TClient>) => {
+				// biome-ignore lint/suspicious/noExplicitAny: inngest middleware produces unresolvable context type
+			async (ctx: any) => {
 					const effectStep = wrapStep(ctx.step);
 					return runPromise(
 						ext_handler({
 							...ctx,
 							step: effectStep,
-						} as unknown as EffectHandlerCtx<TClient>),
+						} as unknown as EffectHandlerCtx<
+							TClient,
+							ExtractTriggerName<TClient, TTrigger>
+						>),
 					);
 				},
 			) as unknown as InngestFunction;

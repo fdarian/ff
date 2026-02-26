@@ -1,6 +1,6 @@
 import { Cron, Duration, Effect } from 'effect';
 import { EventSchemas, Inngest } from 'inngest';
-import { describe, expect, test, vi } from 'vitest';
+import { describe, expect, expectTypeOf, test, vi } from 'vitest';
 import { cronToString } from './cron';
 import { createInngest } from './index';
 import { wrapStep } from './step';
@@ -139,10 +139,12 @@ describe('createInngest', () => {
 	});
 
 	test('event schema types flow through', async () => {
+		type Data = { email: string };
+
 		const client = new Inngest({
 			id: 'typed',
 			schemas: new EventSchemas().fromRecord<{
-				'user.signup': { data: { email: string } };
+				'user.signup': { data: Data };
 			}>(),
 		});
 		const ig = createInngest(client);
@@ -152,6 +154,9 @@ describe('createInngest', () => {
 			{ event: 'user.signup' },
 			({ event }) =>
 				Effect.gen(function* () {
+					expectTypeOf(event).toHaveProperty('name');
+					expectTypeOf(event).toHaveProperty('data');
+					expectTypeOf(event.data).toEqualTypeOf<Data>();
 					const email: string = event.data.email;
 					return email;
 				}),
