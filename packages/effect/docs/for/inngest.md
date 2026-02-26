@@ -29,7 +29,7 @@ const program = Effect.gen(function* () {
     })
   )
 
-  const handler = ig.httpHandler({ functions: [fn] })
+  const handler = ig.fetchHandler({ functions: [fn] })
   Bun.serve({ fetch: handler })
 })
 
@@ -51,7 +51,8 @@ Returns:
 - `layer` — `Layer.succeed(Tag, client)` for providing via context
 - `send(payload)` — send events (see [Sending Events](#sending-events))
 - `createFunction(config, trigger, handler)` — create functions (see [Creating Functions](#creating-functions))
-- `httpHandler(opts)` — create HTTP handler (see [HTTP Handler](#http-handler))
+- `httpHandler(opts)` — Effect `HttpApp.Default` handler (see [HTTP Handler](#http-handler))
+- `fetchHandler(opts)` — raw fetch handler (see [Fetch Handler](#fetch-handler))
 
 ## Creating Functions
 
