@@ -1,5 +1,12 @@
 # ff-effect
 
+## 0.0.11
+
+### Patch Changes
+
+- 1228b3d: Add Inngest integration (`ff-effect/for/inngest`)
+- bd63111: Add Effect wrappers for AI SDK (generateText, streamText, tool)
+
 ## 0.0.10
 
 ### Patch Changes
