@@ -38,7 +38,7 @@ class WrappedTxError extends Error {}
 
 const defaultPrefix = '@ff-effect/Drizzle' as const;
 
-export function createDatabase<
+export function createDrizzle<
 	TClient extends AnyDrizzleClient,
 	E,
 	R,

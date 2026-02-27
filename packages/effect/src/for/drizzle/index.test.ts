@@ -5,7 +5,7 @@ import { pgTable, text } from 'drizzle-orm/pg-core';
 import { drizzle } from 'drizzle-orm/pglite';
 import { Effect, Layer } from 'effect';
 import { expectTypeOf } from 'vitest';
-import { createDatabase, DrizzleError } from './index.js';
+import { createDrizzle, DrizzleError } from './index.js';
 
 const users = pgTable('users', {
 	id: text('id').primaryKey(),
@@ -46,7 +46,7 @@ layer(Layer.mergeAll(BunContext.layer, TestDb.Default))((it) => {
 					testDb.insert(users).values({ id: '1', name: 'Alice' }),
 				);
 
-				const database = createDatabase(Effect.succeed(testDb));
+				const database = createDrizzle(Effect.succeed(testDb));
 
 				const result = yield* database
 					.db((d) => d.select().from(users))
@@ -60,7 +60,7 @@ layer(Layer.mergeAll(BunContext.layer, TestDb.Default))((it) => {
 			Effect.gen(function* () {
 				const testDb = yield* TestDb.get();
 
-				const database = createDatabase(Effect.succeed(testDb));
+				const database = createDrizzle(Effect.succeed(testDb));
 
 				const result = yield* database
 					.db(() => Promise.reject(new Error('DB failure')))
@@ -79,7 +79,7 @@ layer(Layer.mergeAll(BunContext.layer, TestDb.Default))((it) => {
 			Effect.gen(function* () {
 				const testDb = yield* TestDb.get();
 
-				const database = createDatabase(Effect.succeed(testDb));
+				const database = createDrizzle(Effect.succeed(testDb));
 
 				yield* Effect.gen(function* () {
 					const ok = 'ok' as const;
@@ -110,7 +110,7 @@ layer(Layer.mergeAll(BunContext.layer, TestDb.Default))((it) => {
 			Effect.gen(function* () {
 				const testDb = yield* TestDb.get();
 
-				const database = createDatabase(Effect.succeed(testDb));
+				const database = createDrizzle(Effect.succeed(testDb));
 
 				const result = yield* Effect.gen(function* () {
 					const txResult = yield* database
@@ -144,10 +144,10 @@ layer(Layer.mergeAll(BunContext.layer, TestDb.Default))((it) => {
 			() =>
 				Effect.gen(function* () {
 					const testDb = yield* TestDb;
-					const database1 = createDatabase(testDb.get());
+					const database1 = createDrizzle(testDb.get());
 
 					const database2Identifier = 'custom-db' as const;
-					const database2 = createDatabase(testDb.get(), {
+					const database2 = createDrizzle(testDb.get(), {
 						tagId: database2Identifier,
 					});
 
