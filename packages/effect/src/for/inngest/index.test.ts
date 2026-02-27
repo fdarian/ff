@@ -44,7 +44,7 @@ describe('wrapStep', () => {
 
 		const wrapped = wrapStep(mockStep);
 		const result = await Effect.runPromise(
-			wrapped.run('test', () => Effect.succeed(42)),
+			Effect.scoped(wrapped.run('test', () => Effect.succeed(42))),
 		);
 		expect(result).toBe(42);
 		expect(mockStep.run).toHaveBeenCalledWith('test', expect.any(Function));
@@ -55,7 +55,7 @@ describe('wrapStep', () => {
 
 		const wrapped = wrapStep(mockStep);
 		const exit = await Effect.runPromiseExit(
-			wrapped.run('fail', () => Effect.succeed(1)),
+			Effect.scoped(wrapped.run('fail', () => Effect.succeed(1))),
 		);
 		expect(exit._tag).toBe('Failure');
 	});
