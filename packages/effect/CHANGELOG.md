@@ -1,5 +1,12 @@
 # ff-effect
 
+## 0.0.12
+
+### Patch Changes
+
+- 1c615a1: Rename into `createDrizzle` for consistency
+- c20b239: Allow requirement on step.run and use InngestFunction.Any
+
 ## 0.0.11
 
 ### Patch Changes
