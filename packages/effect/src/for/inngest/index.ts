@@ -2,7 +2,12 @@ import { HttpApp } from '@effect/platform';
 import { type Cron, Data, Effect, FiberSet, Layer } from 'effect';
 import * as Context from 'effect/Context';
 import * as Inspectable from 'effect/Inspectable';
-import type { GetEvents, GetFunctionInput, Inngest } from 'inngest';
+import type {
+	GetEvents,
+	GetFunctionInput,
+	Inngest,
+	InngestFunction,
+} from 'inngest';
 import { serve } from 'inngest/bun';
 import { extract } from '../../extract';
 import { cronToString } from './cron';
@@ -15,11 +20,6 @@ export class InngestError extends Data.TaggedError('ff-effect/InngestError')<{
 	message: string;
 	cause?: unknown;
 }> {}
-
-declare const InngestFunctionBrand: unique symbol;
-
-/** Opaque wrapper around inngest's InngestFunction to avoid leaking internal types */
-export type InngestFunction = { readonly [InngestFunctionBrand]: true };
 
 // biome-ignore lint/suspicious/noExplicitAny: matches Inngest.Any
 type AnyInngest = Inngest<any>;
@@ -134,11 +134,11 @@ export function createInngest<
 						>),
 					);
 				},
-			) as unknown as InngestFunction;
+			) as unknown as InngestFunction.Any;
 		});
 
 	type ServeOpts = {
-		functions: InngestFunction[];
+		functions: InngestFunction.Any[];
 		servePath?: string;
 		signingKey?: string;
 		signingKeyFallback?: string;
