@@ -11,6 +11,7 @@
 		"@ai-sdk/xai": "^3.0.29",
 		"@effect/opentelemetry": "^0.60.0",
 		"@effect/platform": "^0.93.6",
+		"@effect/platform-bun": "^0.87.1",
 		"@opentelemetry/exporter-trace-otlp-http": "^0.208.0",
 		"@opentelemetry/sdk-trace-base": "^2.2.0",
 		"@orpc/client": "^1.13.2",
@@ -20,6 +21,7 @@
 		"ff-ai": "workspace:*",
 		"ff-effect": "workspace:*",
 		"ff-serv": "workspace:*",
+		"inngest": "^3.52.4",
 		"postgres": "^3.4.7"
 	},
 	"devDependencies": {
