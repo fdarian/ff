@@ -1,5 +1,4 @@
-import { Duration, Effect } from 'effect';
-import { runPromiseUnwrapped } from '../../run-promise-unwrapped';
+import { Duration, Effect, FiberSet } from 'effect';
 import { InngestError } from './index';
 
 type OriginalStep = {
@@ -17,12 +16,15 @@ export function wrapStep<TStep>(step: TStep) {
 	const s = step as unknown as OriginalStep;
 
 	return {
-		run: <A, E>(id: string, fn: () => Effect.Effect<A, E, never>) =>
-			Effect.tryPromise({
-				try: () => s.run(id, () => runPromiseUnwrapped(fn())),
-				catch: (cause) =>
-					new InngestError({ message: `Step "${id}" failed`, cause }),
-			}) as Effect.Effect<A, InngestError>,
+		run: <A, E, R>(id: string, fn: () => Effect.Effect<A, E, R>) =>
+			Effect.gen(function* () {
+				const runPromise = yield* FiberSet.makeRuntimePromise<R>();
+				return yield* Effect.tryPromise({
+					try: () => s.run(id, () => runPromise(fn())),
+					catch: (cause) =>
+						new InngestError({ message: `Step "${id}" failed`, cause }),
+				}) as Effect.Effect<A, InngestError, R>;
+			}),
 
 		sleep: (id: string, duration: Duration.DurationInput) =>
 			Effect.tryPromise({
