@@ -7,5 +7,5 @@ export default defineConfig({
 	splitting: false,
 	sourcemap: true,
 	clean: true,
-	external: ['effect', 'ai', 'inngest', 'inngest/bun'],
+	external: ['effect', '@effect/platform', 'ai', 'inngest', 'inngest/bun'],
 });

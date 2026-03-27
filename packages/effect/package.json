@@ -38,12 +38,16 @@
 		"vitest": "^4.0.10"
 	},
 	"peerDependencies": {
+		"@effect/platform": "^0.93.6",
 		"ai": "^6",
 		"drizzle-orm": "^0.44.7",
 		"effect": "^3.19.3",
 		"inngest": "^3"
 	},
 	"peerDependenciesMeta": {
+		"@effect/platform": {
+			"optional": true
+		},
 		"ai": {
 			"optional": true
 		},
