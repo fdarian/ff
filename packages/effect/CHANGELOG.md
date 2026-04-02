@@ -1,5 +1,12 @@
 # ff-effect
 
+## 0.0.13
+
+### Patch Changes
+
+- 6661edf: Fix memory leak in Inngest handler: scope step FiberSets per invocation instead of leaking finalizers into the long-lived app scope
+- 543492d: Add missing peer deps
+
 ## 0.0.12
 
 ### Patch Changes
