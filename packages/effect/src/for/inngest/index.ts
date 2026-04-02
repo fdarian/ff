@@ -9,7 +9,6 @@ import type {
 	InngestFunction,
 } from 'inngest';
 import { serve } from 'inngest/bun';
-import { extract } from '../../extract';
 import { cronToString } from './cron';
 import { wrapStep } from './step';
 
@@ -114,7 +113,6 @@ export function createInngest<
 	) =>
 		Effect.gen(function* () {
 			const c = yield* Tag;
-			const ext_handler = yield* extract(handler);
 			const resolvedTrigger = resolveTrigger<TClient>(trigger);
 			const runPromise = yield* FiberSet.makeRuntimePromise();
 
@@ -125,13 +123,15 @@ export function createInngest<
 				async (ctx: any) => {
 					const effectStep = wrapStep(ctx.step);
 					return runPromise(
-						ext_handler({
-							...ctx,
-							step: effectStep,
-						} as unknown as EffectHandlerCtx<
-							TClient,
-							ExtractTriggerName<TClient, TTrigger>
-						>),
+						Effect.scoped(
+							handler({
+								...ctx,
+								step: effectStep,
+							} as unknown as EffectHandlerCtx<
+								TClient,
+								ExtractTriggerName<TClient, TTrigger>
+							>),
+						) as unknown as Effect.Effect<unknown, unknown, never>,
 					);
 				},
 			) as unknown as InngestFunction.Any;
