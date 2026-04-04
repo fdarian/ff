@@ -1,5 +1,11 @@
 # ff-effect
 
+## 0.0.14
+
+### Patch Changes
+
+- 8498ce9: fix: preserve `OUTPUT` generic in `generateText` wrapper so `result.output` is properly typed instead of resolving to `any`
+
 ## 0.0.13
 
 ### Patch Changes
