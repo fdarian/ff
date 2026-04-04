@@ -1,5 +1,11 @@
 # ff-ai
 
+## 0.2.2
+
+### Patch Changes
+
+- 4b0d8ef: Fix models.dev price lookup for model IDs with `-reasoning` suffix by retrying without the suffix on 404
+
 ## 0.2.1
 
 ### Patch Changes
