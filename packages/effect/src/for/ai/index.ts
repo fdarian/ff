@@ -42,16 +42,21 @@ type EffectifyCallbacks<T, Keys extends string, R> = Omit<T, Keys & keyof T> & {
 		: T[K];
 };
 
-type GenerateTextOriginalParams = Parameters<typeof Ai.generateText>[0];
-type GenerateTextReturn = Awaited<ReturnType<typeof Ai.generateText>>;
-
-export function generateText<R = never>(
+export function generateText<
+	TOOLS extends Ai.ToolSet = Ai.ToolSet,
+	OUTPUT extends Ai.Output.Output = Ai.Output.Output<string, string>,
+	R = never,
+>(
 	params: EffectifyCallbacks<
-		GenerateTextOriginalParams,
+		Parameters<typeof Ai.generateText<TOOLS, OUTPUT>>[0],
 		GenerateTextCallbackKeys,
 		R
 	>,
-): Effect.Effect<GenerateTextReturn, AiError, R> {
+): Effect.Effect<
+	Awaited<ReturnType<typeof Ai.generateText<TOOLS, OUTPUT>>>,
+	AiError,
+	R
+> {
 	return Effect.gen(function* () {
 		const runPromise = yield* FiberSet.makeRuntimePromise<R>();
 
@@ -75,7 +80,7 @@ export function generateText<R = never>(
 				runPromise,
 				params.experimental_onToolCallFinish,
 			),
-		} as GenerateTextOriginalParams;
+		} as Parameters<typeof Ai.generateText<TOOLS, OUTPUT>>[0];
 
 		return yield* Effect.tryPromise({
 			try: () => Ai.generateText(originalParams),
