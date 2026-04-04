@@ -71,11 +71,11 @@ class ModelsDevData extends Schema.Class<ModelsDevData>('ff-ai/ModelsDevData')({
 	}
 }
 
-const fetchModelsDev = (model: ModelInput) =>
+const modelsDevUrl = (provider: string, modelId: string) =>
+	`https://raw.githubusercontent.com/sst/models.dev/refs/heads/dev/providers/${provider}/models/${modelId}.toml`;
+
+const fetchModelsDevByUrl = (url: string) =>
 	Effect.gen(function* () {
-		const url = `https://raw.githubusercontent.com/sst/models.dev/refs/heads/dev/providers\
-/${ModelInput.getProvider(model)}/\
-models/${ModelInput.getModelId(model)}.toml`;
 		const response = yield* HttpClient.get(url);
 		const text = yield* response.text;
 		if (response.status === 404) {
@@ -92,6 +92,21 @@ models/${ModelInput.getModelId(model)}.toml`;
 				}),
 		});
 		return yield* Schema.decodeUnknown(ModelsDevData)(parsed);
+	});
+
+/** models.dev treats reasoning as default (no suffix), so retry without it on 404 */
+const fetchModelsDev = (model: ModelInput) =>
+	Effect.gen(function* () {
+		const provider = ModelInput.getProvider(model);
+		const modelId = ModelInput.getModelId(model);
+		const result = yield* fetchModelsDevByUrl(modelsDevUrl(provider, modelId));
+		if (result != null) return result;
+
+		if (modelId.endsWith('-reasoning')) {
+			const stripped = modelId.replace(/-reasoning$/, '');
+			return yield* fetchModelsDevByUrl(modelsDevUrl(provider, stripped));
+		}
+		return null;
 	});
 
 const calcCost = (token: number, pricePerMillion: PricePerMillion) =>
