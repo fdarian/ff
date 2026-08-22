@@ -84,7 +84,6 @@ describe('saveMessage', () => {
 				generateText({
 					tools: params.tools,
 					model: new AiTest.MockLanguageModelV4({
-						// @ts-expect-error
 						doGenerate: async ({ prompt }) => {
 							const step = params.steps[stepNumber++];
 							if (step == null) {
