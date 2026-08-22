@@ -12,10 +12,10 @@ const DirectSourceConfig = Schema.Struct({
 	databaseUrl: Schema.String,
 });
 
-export const DatabaseSourceConfig = Schema.Union(
+export const DatabaseSourceConfig = Schema.Union([
 	RailwaySourceConfig,
 	DirectSourceConfig,
-);
+]);
 
 export const PullDatabaseConfig = Schema.Struct({
 	source: DatabaseSourceConfig,

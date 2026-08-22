@@ -1,22 +1,17 @@
-import * as platform from '@effect/platform';
-import { Effect, Option, Schema } from 'effect';
+import { Effect, FileSystem, Option, Schema } from 'effect';
 import { FfServConfig } from './schema.js';
 
 const DEFAULT_CONFIG_PATHS = ['.ff-serv.json', 'ff-serv.config.json'];
 
 const tryLoadConfigFromPath = (
 	filePath: string,
-): Effect.Effect<
-	Option.Option<FfServConfig>,
-	never,
-	platform.FileSystem.FileSystem
-> =>
+): Effect.Effect<Option.Option<FfServConfig>, never, FileSystem.FileSystem> =>
 	Effect.gen(function* () {
-		const fs = yield* platform.FileSystem.FileSystem;
+		const fs = yield* FileSystem.FileSystem;
 
 		const exists = yield* fs
 			.exists(filePath)
-			.pipe(Effect.catchAll(() => Effect.succeed(false)));
+			.pipe(Effect.catch(() => Effect.succeed(false)));
 
 		if (!exists) {
 			return Option.none<FfServConfig>();
@@ -24,40 +19,36 @@ const tryLoadConfigFromPath = (
 
 		const contentResult = yield* fs
 			.readFileString(filePath)
-			.pipe(Effect.either);
+			.pipe(Effect.result);
 
-		if (contentResult._tag === 'Left') {
+		if (contentResult._tag === 'Failure') {
 			return Option.none<FfServConfig>();
 		}
 
 		const parseResult = yield* Effect.try(() =>
-			JSON.parse(contentResult.right),
-		).pipe(Effect.either);
+			JSON.parse(contentResult.success),
+		).pipe(Effect.result);
 
-		if (parseResult._tag === 'Left') {
+		if (parseResult._tag === 'Failure') {
 			yield* Effect.logWarning(`Failed to parse config file: ${filePath}`);
 			return Option.none<FfServConfig>();
 		}
 
-		const validateResult = yield* Schema.decodeUnknown(FfServConfig)(
-			parseResult.right,
-		).pipe(Effect.either);
+		const validateResult = yield* Schema.decodeUnknownEffect(FfServConfig)(
+			parseResult.success,
+		).pipe(Effect.result);
 
-		if (validateResult._tag === 'Left') {
+		if (validateResult._tag === 'Failure') {
 			yield* Effect.logWarning(`Invalid config schema in: ${filePath}`);
 			return Option.none<FfServConfig>();
 		}
 
-		return Option.some(validateResult.right);
+		return Option.some(validateResult.success);
 	});
 
 export const loadConfig = (
 	customConfigPath?: string,
-): Effect.Effect<
-	Option.Option<FfServConfig>,
-	never,
-	platform.FileSystem.FileSystem
-> =>
+): Effect.Effect<Option.Option<FfServConfig>, never, FileSystem.FileSystem> =>
 	Effect.gen(function* () {
 		const pathsToTry = customConfigPath
 			? [customConfigPath]

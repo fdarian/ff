@@ -1,11 +1,11 @@
-import * as platform from '@effect/platform';
 import { Effect } from 'effect';
+import { ChildProcess, ChildProcessSpawner } from 'effect/unstable/process';
 
 export interface DatabaseSource {
 	readonly getConnectionUrl: Effect.Effect<
 		string,
 		Error,
-		platform.CommandExecutor.CommandExecutor
+		ChildProcessSpawner.ChildProcessSpawner
 	>;
 	readonly displayName: string;
 }
@@ -17,21 +17,29 @@ export const createRailwaySource = (config: {
 }): DatabaseSource => ({
 	displayName: 'Railway',
 	getConnectionUrl: Effect.gen(function* () {
-		yield* platform.Command.make(
-			'railway',
-			'link',
-			`--project=${config.projectId}`,
-			`--environment=${config.environmentId}`,
-			`--service=${config.serviceId}`,
-		).pipe(platform.Command.stdout('inherit'), platform.Command.exitCode);
+		const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
 
-		const output = yield* platform.Command.make(
-			'railway',
-			'run',
-			'node',
-			'-e',
-			'console.log(process.env.DATABASE_PUBLIC_URL)',
-		).pipe(platform.Command.string);
+		yield* spawner.exitCode(
+			ChildProcess.make(
+				'railway',
+				[
+					'link',
+					`--project=${config.projectId}`,
+					`--environment=${config.environmentId}`,
+					`--service=${config.serviceId}`,
+				],
+				{ stdout: 'inherit' },
+			),
+		);
+
+		const output = yield* spawner.string(
+			ChildProcess.make('railway', [
+				'run',
+				'node',
+				'-e',
+				'console.log(process.env.DATABASE_PUBLIC_URL)',
+			]),
+		);
 
 		return output.trim();
 	}),
