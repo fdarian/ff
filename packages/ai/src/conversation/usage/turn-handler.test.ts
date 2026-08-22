@@ -58,9 +58,6 @@ describe('saveMessage', () => {
 		response: Exclude<Ai.AssistantContent, string>;
 	};
 
-	const MockStore = createMockStore();
-	const TestLayer = MockStore.layer;
-
 	const run = (params: {
 		steps: [UserStep, ...Array<SubsequentStep>];
 		tools?: Ai.ToolSet;
@@ -83,8 +80,7 @@ describe('saveMessage', () => {
 			yield* Effect.tryPromise(() =>
 				generateText({
 					tools: params.tools,
-					model: new AiTest.MockLanguageModelV3({
-						// @ts-expect-error
+					model: new AiTest.MockLanguageModelV4({
 						doGenerate: async ({ prompt }) => {
 							const step = params.steps[stepNumber++];
 							if (step == null) {
@@ -95,10 +91,18 @@ Step number: ${stepNumber}
 Available steps: ${JSON.stringify(params.steps, null, 2)}`,
 								);
 							}
+							const hasToolCall = step.response.some(
+								(part) => part.type === 'tool-call',
+							);
 							return {
 								content: [...step.response],
-								finishReason: '',
-								usage: { inputTokens: 99, outputTokens: 99, totalTokens: 99 },
+								finishReason: {
+									unified: hasToolCall ? 'tool-calls' : 'stop',
+								},
+								usage: {
+									inputTokens: { total: 99 },
+									outputTokens: { total: 99 },
+								},
 								warnings: [],
 							};
 						},
@@ -118,7 +122,13 @@ Available steps: ${JSON.stringify(params.steps, null, 2)}`,
 					}),
 				),
 			).toMatchSnapshot();
-		}).pipe(Effect.provide(TestLayer), (e) => Effect.runPromise(e));
+		}).pipe(
+			// Fresh store per call: the two tests below share the same
+			// resourceId/threadId, so a shared store would leak one test's
+			// messages into the other's snapshot depending on run order.
+			Effect.provide(createMockStore().layer),
+			(e) => Effect.runPromise(e),
+		);
 
 	test('simple one step', async () =>
 		run({

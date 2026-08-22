@@ -7,8 +7,8 @@
 		"check:lint": "biome check"
 	},
 	"dependencies": {
-		"@ai-sdk/google": "^3.0.10",
-		"@ai-sdk/xai": "^3.0.29",
+		"@ai-sdk/google": "^4",
+		"@ai-sdk/xai": "^4",
 		"@effect/opentelemetry": "^0.60.0",
 		"@effect/platform": "^0.93.6",
 		"@effect/platform-bun": "^0.87.1",
@@ -16,7 +16,7 @@
 		"@opentelemetry/sdk-trace-base": "^2.2.0",
 		"@orpc/client": "^1.13.2",
 		"@orpc/server": "^1.13.2",
-		"ai": "^6.0.42",
+		"ai": "^7.0.76",
 		"effect": "^3.19.14",
 		"ff-ai": "workspace:*",
 		"ff-effect": "workspace:*",

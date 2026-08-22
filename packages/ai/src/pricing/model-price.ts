@@ -6,10 +6,10 @@ import * as toml from 'smol-toml';
 const PricePerMillion = Schema.Number.pipe(
 	Schema.brand('ff-ai/PricePerMillion'),
 );
-type PricePerMillion = typeof PricePerMillion.Type;
+export type PricePerMillion = typeof PricePerMillion.Type;
 
 const Usd = Schema.Number.pipe(Schema.brand('ff-ai/Usd'));
-type Usd = typeof Usd.Type;
+export type Usd = typeof Usd.Type;
 
 export type UsageCost = {
 	input: Usd;
@@ -112,6 +112,34 @@ const fetchModelsDev = (model: ModelInput) =>
 const calcCost = (token: number, pricePerMillion: PricePerMillion) =>
 	Usd.make((token * pricePerMillion) / 1_000_000);
 
+/**
+ * Prices input tokens, degrading gracefully as the provider's usage detail
+ * gets sparser: the SDK-supplied noCacheTokens split when present, a
+ * cacheReadTokens/inputTokens derivation for providers that only report a
+ * cached count and a total (the v6 usage shape), and a flat rate over the
+ * full total when there is no cache detail at all.
+ */
+export function calcInputCost(
+	usage: Ai.LanguageModelUsage,
+	price: { input: PricePerMillion; cacheRead?: PricePerMillion },
+): Usd {
+	if (usage.inputTokens == null) return Usd.make(0);
+
+	const noCacheTokens = usage.inputTokenDetails.noCacheTokens;
+	const cacheReadTokens = usage.inputTokenDetails.cacheReadTokens;
+
+	if (price.cacheRead != null && cacheReadTokens != null) {
+		const freshInputTokens =
+			noCacheTokens ?? usage.inputTokens - cacheReadTokens;
+		return Usd.make(
+			calcCost(cacheReadTokens, price.cacheRead) +
+				calcCost(freshInputTokens, price.input),
+		);
+	}
+
+	return calcCost(usage.inputTokens, price.input);
+}
+
 export const getModelUsageCost = Effect.fn(function* (params: {
 	model: ModelInput;
 	usage: Ai.LanguageModelUsage;
@@ -131,17 +159,10 @@ export const getModelUsageCost = Effect.fn(function* (params: {
 
 	const usage = params.usage;
 
-	const inputCost = (() => {
-		if (usage.inputTokens == null) return Usd.make(0);
-		if (price.cacheRead != null && usage.cachedInputTokens != null) {
-			const freshInputTokens = usage.inputTokens - usage.cachedInputTokens;
-			return Usd.make(
-				calcCost(usage.cachedInputTokens, price.cacheRead) +
-					calcCost(freshInputTokens, price.input),
-			);
-		}
-		return calcCost(usage.inputTokens, price.input);
-	})();
+	const inputCost = calcInputCost(usage, {
+		input: price.input,
+		cacheRead: price.cacheRead,
+	});
 
 	const outputCost = (() => {
 		if (usage.outputTokens == null) return Usd.make(0);
