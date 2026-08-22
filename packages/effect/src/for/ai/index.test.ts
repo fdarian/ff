@@ -1,7 +1,8 @@
 import * as Ai from 'ai';
-import { Effect } from 'effect';
-import { describe, expect, test, vi } from 'vitest';
+import { Effect, Schema, type Scope } from 'effect';
+import { describe, expect, expectTypeOf, test, vi } from 'vitest';
 import { AiError, generateText, streamText, tool } from './index.js';
+import { effectSchema } from './schema.js';
 
 vi.mock('ai', async (importOriginal) => {
 	const actual = await importOriginal<typeof Ai>();
@@ -315,5 +316,68 @@ describe('tool', () => {
 			Effect.provide(WeatherService.Default),
 			Effect.runPromise,
 		);
+	});
+});
+
+// These are compile-time-only checks: a tsgo-only regression (like OUTPUT
+// silently falling back to its default, or a swapped generic position) never
+// throws at runtime, so it can't be caught by `expect()` assertions above —
+// `check:tsc` is what would fail if any of these mismatched.
+describe('type-level regressions', () => {
+	const TestSchema = Schema.Struct({ foo: Schema.String });
+
+	test('generateText infers OUTPUT from the `output` param instead of defaulting', () => {
+		const program = generateText({
+			model: {} as Ai.LanguageModel,
+			prompt: 'hi',
+			output: Ai.Output.object({ schema: effectSchema(TestSchema) }),
+		});
+		type Output = Effect.Effect.Success<typeof program>['output'];
+		expectTypeOf<Output>().toEqualTypeOf<{ readonly foo: string }>();
+	});
+
+	test('streamText infers OUTPUT from the `output` param instead of defaulting', () => {
+		const program = streamText({
+			model: {} as Ai.LanguageModel,
+			prompt: 'hi',
+			output: Ai.Output.object({ schema: effectSchema(TestSchema) }),
+		});
+		type StreamResult = Effect.Effect.Success<typeof program>;
+		expectTypeOf<StreamResult['output']>().toEqualTypeOf<
+			PromiseLike<{ readonly foo: string }>
+		>();
+	});
+
+	test('tool<INPUT, OUTPUT, R> binds R to Effect requirements, not CONTEXT (0.0.14 call shape)', () => {
+		class CommandExecutor extends Effect.Service<CommandExecutor>()(
+			'CommandExecutor',
+			{ succeed: { run: (cmd: string) => cmd } },
+		) {}
+
+		const program = tool<{ command: string }, string, CommandExecutor>({
+			description: 'runs a command',
+			inputSchema: {} as Ai.FlexibleSchema<{ command: string }>,
+			execute: (input) =>
+				Effect.gen(function* () {
+					const executor = yield* CommandExecutor;
+					return executor.run(input.command);
+				}),
+		});
+		expectTypeOf<Effect.Effect.Context<typeof program>>().toEqualTypeOf<
+			CommandExecutor | Scope.Scope
+		>();
+	});
+
+	test('tool contextSchema infers CONTEXT instead of defaulting to Record<string, unknown>', () => {
+		const program = tool({
+			description: 'ctx',
+			inputSchema: {} as Ai.FlexibleSchema<{ x: number }>,
+			contextSchema: {} as Ai.FlexibleSchema<{ userId: string }>,
+			execute: (_input, options) => Effect.succeed(options.context.userId),
+		});
+		type ToolType = Effect.Effect.Success<typeof program>;
+		expectTypeOf<ToolType>().toEqualTypeOf<
+			Ai.Tool<{ x: number }, string, { userId: string }>
+		>();
 	});
 });
