@@ -1,0 +1,17 @@
+name: Setup PNPM
+description: Set up PNPM (bun is installed via devEngines). Requires actions/checkout to run first.
+
+inputs:
+  cache:
+    description: Cache the pnpm store, keyed off the root lockfile
+    required: false
+    default: "true"
+
+runs:
+  using: composite
+  steps:
+    - name: Setup PNPM
+      uses: pnpm/setup@v2
+      with:
+        cache: ${{ inputs.cache }}
+        install: false

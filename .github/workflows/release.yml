@@ -10,25 +10,34 @@ on:
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write
+
 jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+      - uses: pnpm/setup@v2
+        with:
+          cache: false
+          install: false
 
-      - name: Install Dependencies
-        run: bun install --frozen-lockfile
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+          package-manager-cache: false  # never use caching in release builds
 
-      - name: Create Release Pull Request or Publish
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Create Release PR or Publish
         uses: changesets/action@v1
         with:
-          version: bun run ci:version
-          publish: bun run ci:release
-        env:
-          GITHUB_TOKEN: ${{ secrets.FF_GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          version: pnpm run ci:version
+          publish: pnpm run ci:release
