@@ -1,8 +1,8 @@
-import { FetchHttpClient, HttpClient } from '@effect/platform';
-import * as BunContext from '@effect/platform-bun/BunContext';
 import * as BunRuntime from '@effect/platform-bun/BunRuntime';
-import { Effect, Layer } from 'effect';
+import * as BunServices from '@effect/platform-bun/BunServices';
+import { Context, Effect, Layer, Scope } from 'effect';
 import * as S from 'effect/Schema';
+import { FetchHttpClient, HttpClient } from 'effect/unstable/http';
 import { createInngest } from 'ff-effect/for/inngest';
 import { basicHandler, createFetchHandler, Logger } from 'ff-serv';
 import * as InngestSdk from 'inngest';
@@ -13,20 +13,22 @@ import * as InngestSdk from 'inngest';
  * 2. Run this
  **/
 
-class Nothing extends Effect.Service<Nothing>()('nothing', {
-	effect: Effect.gen(function* () {
+class Nothing extends Context.Service<Nothing>()('nothing', {
+	make: Effect.gen(function* () {
 		return {
 			say: (message: string) => Logger.info(message),
 		};
 	}),
-}) {}
+}) {
+	static readonly layer = Layer.effect(this, this.make);
+}
 
 const Inngest = createInngest(
 	Effect.succeed(
 		new InngestSdk.Inngest({
 			id: 'dev',
 			schemas: new InngestSdk.EventSchemas().fromSchema({
-				'say-hello': S.standardSchemaV1(
+				'say-hello': S.toStandardSchemaV1(
 					S.Struct({
 						message: S.String,
 					}),
@@ -86,10 +88,13 @@ BunRuntime.runMain(
 	program.pipe(
 		Effect.provide(
 			Layer.mergeAll(
-				BunContext.layer,
-				Nothing.Default,
+				BunServices.layer,
+				Nothing.layer,
 				Inngest.layer,
-				Layer.scope,
+				Layer.effect(
+					Scope.Scope,
+					Effect.acquireRelease(Scope.make(), Scope.close),
+				),
 				FetchHttpClient.layer,
 			),
 		),
