@@ -21,14 +21,12 @@
 		"ff-ai": "workspace:*",
 		"ff-effect": "workspace:*",
 		"ff-serv": "workspace:*",
-		"inngest": "^3.52.4",
-		"postgres": "^3.4.7"
+		"inngest": "^3.52.4"
 	},
 	"devDependencies": {
 		"@total-typescript/tsconfig": "^1.0.4",
 		"@types/bun": "^1.3.2",
 		"@typescript/native-preview": "^7.0.0-dev.20260216.1",
-		"drizzle-kit": "^0.31.6",
 		"typescript": "^5.9.3"
 	}
 }
