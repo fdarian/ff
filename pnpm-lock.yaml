@@ -126,18 +126,9 @@ importers:
 
   packages/ai:
     dependencies:
-      '@ai-sdk/provider':
-        specifier: ^4
-        version: 4.0.7
-      '@ai-sdk/valibot':
-        specifier: ^3
-        version: 3.0.28(@valibot/to-json-schema@1.7.1(valibot@1.4.2(typescript@5.9.3)))(valibot@1.4.2(typescript@5.9.3))(zod@4.4.3)
       '@effect/platform':
         specifier: ^0.93.6
         version: 0.93.8(effect@3.22.1)
-      ai:
-        specifier: ^7
-        version: 7.0.73(zod@4.4.3)
       drizzle-orm:
         specifier: ^0.44.7
         version: 0.44.7(@electric-sql/pglite@0.3.16)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(@types/pg@8.15.6)(bun-types@1.4.0)(postgres@3.4.9)
@@ -157,6 +148,12 @@ importers:
         specifier: ^1.1.0
         version: 1.4.2(typescript@5.9.3)
     devDependencies:
+      '@ai-sdk/provider':
+        specifier: ^4.0.7
+        version: 4.0.7
+      '@ai-sdk/valibot':
+        specifier: ^3.0.28
+        version: 3.0.28(@valibot/to-json-schema@1.7.1(valibot@1.4.2(typescript@5.9.3)))(valibot@1.4.2(typescript@5.9.3))(zod@4.4.3)
       '@total-typescript/tsconfig':
         specifier: ^1.0.4
         version: 1.0.4
@@ -166,6 +163,9 @@ importers:
       '@typescript/native-preview':
         specifier: ^7.0.0-dev.20260120.1
         version: 7.0.0-dev.20260707.2
+      ai:
+        specifier: ^7.0.76
+        version: 7.0.76(zod@4.4.3)
       drizzle-kit:
         specifier: ^0.31.6
         version: 0.31.10
@@ -379,12 +379,6 @@ packages:
   '@ai-sdk/gateway@3.0.177':
     resolution: {integrity: sha512-U579dA3K2UcezpzJHjyw6UhctFtzFRKOSIrAgxr77teluPGP7vj8aLJpZvEEPf+JbUqbvsHRKKYZzip/+NQ89A==}
     engines: {node: '>=18'}
-    peerDependencies:
-      zod: ^3.25.76 || ^4.1.8
-
-  '@ai-sdk/gateway@4.0.59':
-    resolution: {integrity: sha512-9MPyBBXU5snhuvqMa3OSOYtHP+wlyepJ+E0E+9lVNoxLGmi4sZqGeLbIxSYZeTf7qQ2xPshtfo5qDJHaOmAHvw==}
-    engines: {node: '>=22'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
@@ -2801,12 +2795,6 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  ai@7.0.73:
-    resolution: {integrity: sha512-rm2Rk68seeyhfgXl1JA/oaHcQHL018AfgydkJWx7Bgz0wGDHyvl30SnRIU2V7ZVR60A5K0SOLyP78EZmEJ2tOw==}
-    engines: {node: '>=22'}
-    peerDependencies:
-      zod: ^3.25.76 || ^4.1.8
-
   ai@7.0.76:
     resolution: {integrity: sha512-Mytm/RFJzwJ0nzXiHYAE3dgNpFG/2K2Tks5alwm+PzAQeB6RJAJ97eGuZ8wssy66PcvtGWGIscS4tRi6dg0KLQ==}
     engines: {node: '>=22'}
@@ -4447,13 +4435,6 @@ snapshots:
       '@vercel/oidc': 3.2.0
       zod: 4.4.3
     optional: true
-
-  '@ai-sdk/gateway@4.0.59(zod@4.4.3)':
-    dependencies:
-      '@ai-sdk/provider': 4.0.7
-      '@ai-sdk/provider-utils': 5.0.28(zod@4.4.3)
-      '@vercel/oidc': 3.2.0
-      zod: 4.4.3
 
   '@ai-sdk/gateway@4.0.61(zod@4.4.3)':
     dependencies:
@@ -6806,13 +6787,6 @@ snapshots:
       '@opentelemetry/api': 1.9.1
       zod: 4.4.3
     optional: true
-
-  ai@7.0.73(zod@4.4.3):
-    dependencies:
-      '@ai-sdk/gateway': 4.0.59(zod@4.4.3)
-      '@ai-sdk/provider': 4.0.7
-      '@ai-sdk/provider-utils': 5.0.28(zod@4.4.3)
-      zod: 4.4.3
 
   ai@7.0.76(zod@4.4.3):
     dependencies:
