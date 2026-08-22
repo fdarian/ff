@@ -1,15 +1,8 @@
 {
 	"name": "@repo/root",
-	"workspaces": {
-		"packages": [
-			"apps/*",
-			"packages/*",
-			"internals/*"
-		]
-	},
 	"scripts": {
 		"changeset": "changeset",
-		"ci:version": "changeset version && bun install --no-frozen-lockfile",
+		"ci:version": "changeset version && pnpm install --no-frozen-lockfile",
 		"ci:release": "bun run build && bun scripts/patch-exports.ts && changeset publish",
 		"build": "turbo run build",
 		"format": "biome check --write"
@@ -19,5 +12,12 @@
 		"@changesets/cli": "^2.29.7",
 		"turbo": "^2.8.9"
 	},
-	"packageManager": "bun@1.3.9"
+	"packageManager": "pnpm@12.0.0-rc.8",
+	"devEngines": {
+		"runtime": {
+			"name": "bun",
+			"version": "latest",
+			"onFail": "download"
+		}
+	}
 }

@@ -1,0 +1,18 @@
+packages:
+  - apps/*
+  - packages/*
+  - internals/*
+
+allowBuilds:
+  '@parcel/watcher': true
+  esbuild: true
+  msgpackr-extract: true
+  msw: false
+  protobufjs: true
+
+packageExtensions:
+  bun-types:
+    dependencies:
+      undici-types: '^6.20.0'
+
+enableGlobalVirtualStore: true
