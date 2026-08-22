@@ -1,5 +1,11 @@
 # ff-effect
 
+## 0.1.1
+
+### Patch Changes
+
+- 9fe7184: `generateText`/`streamText` now correctly infer the result type from `output`, `tools`, and `runtimeContext` instead of falling back to their defaults. `tool`'s type parameters are reordered back to `<INPUT, OUTPUT, R, CONTEXT>`, and `CONTEXT` now infers from `contextSchema`.
+
 ## 0.1.0
 
 ### Minor Changes
