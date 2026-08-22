@@ -1,14 +1,18 @@
-import { Effect, Layer } from 'effect';
+import { Context, Effect, Layer } from 'effect';
 import { expect, expectTypeOf, test } from 'vitest';
 import { extract } from './extract.js';
 
-class ServiceA extends Effect.Service<ServiceA>()('A', {
-	sync: () => ({ val: 'A' as string }),
-}) {}
+class ServiceA extends Context.Service<ServiceA>()('A', {
+	make: Effect.sync(() => ({ val: 'A' as string })),
+}) {
+	static readonly layer = Layer.effect(this, this.make);
+}
 
-class ServiceB extends Effect.Service<ServiceB>()('B', {
-	sync: () => ({ val: 'B' as string }),
-}) {}
+class ServiceB extends Context.Service<ServiceB>()('B', {
+	make: Effect.sync(() => ({ val: 'B' as string })),
+}) {
+	static readonly layer = Layer.effect(this, this.make);
+}
 
 test('basic', () =>
 	Effect.gen(function* () {
@@ -33,16 +37,19 @@ test('basic', () =>
 			>
 		>();
 
-		class Container extends Effect.Service<Container>()('Container', {
-			dependencies: [ServiceA.Default],
-			effect: Container_effect,
-		}) {}
+		class Container extends Context.Service<Container>()('Container', {
+			make: Container_effect,
+		}) {
+			static readonly layer = Layer.effect(this, this.make).pipe(
+				Layer.provide(ServiceA.layer),
+			);
+		}
 
 		const main = Effect.gen(function* () {
 			const container = yield* Container;
 
 			expect(yield* container.getVal()).toBe('A');
-		}).pipe(Effect.provide(Container.Default));
+		}).pipe(Effect.provide(Container.layer));
 
 		yield* main;
 	}).pipe((e) => Effect.runPromise(e)));
@@ -82,29 +89,27 @@ test('with excluded', () =>
 			>
 		>();
 
-		class Container extends Effect.Service<Container>()('Container', {
-			dependencies: [
-				ServiceA.Default,
+		class Container extends Context.Service<Container>()('Container', {
+			make: Container_effect,
+		}) {
+			static readonly layer = Layer.effect(this, this.make).pipe(
+				Layer.provide(ServiceA.layer),
 				// Assume this is what the service by default provides ServiceB
-				Layer.succeed(ServiceB, ServiceB.make({ val: 'not this' })),
-			],
-			effect: Container_effect,
-		}) {}
+				Layer.provide(Layer.succeed(ServiceB, { val: 'not this' })),
+			);
+		}
 
 		const main = Effect.gen(function* () {
 			const container = yield* Container;
 			const result = yield* container.getVal().pipe(
-				Effect.provideService(
-					ServiceB,
-					// The exclusion should use this instead
-					ServiceB.make({ val: 'this one' }),
-				),
+				// The exclusion should use this instead
+				Effect.provideService(ServiceB, { val: 'this one' }),
 			);
 
 			expect(result.a).toBe('A');
 			// B is using the new provided
 			expect(result.b).toBe('this one');
-		}).pipe(Effect.provide(Container.Default));
+		}).pipe(Effect.provide(Container.layer));
 
 		yield* main;
 	}).pipe((e) => Effect.runPromise(e)));

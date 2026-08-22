@@ -1,5 +1,5 @@
 import * as Ai from 'ai';
-import { Effect, Schema, type Scope } from 'effect';
+import { Context, Effect, Layer, Schema, type Scope } from 'effect';
 import { describe, expect, expectTypeOf, test, vi } from 'vitest';
 import { AiError, generateText, streamText, tool } from './index.js';
 import { effectSchema } from './schema.js';
@@ -274,14 +274,16 @@ describe('tool', () => {
 		}).pipe(Effect.scoped, Effect.runPromise));
 
 	test('execute handler can access Effect services', () => {
-		class WeatherService extends Effect.Service<WeatherService>()(
+		class WeatherService extends Context.Service<WeatherService>()(
 			'WeatherService',
 			{
-				succeed: {
+				make: Effect.succeed({
 					getWeather: (city: string) => `${city}: rainy`,
-				},
+				}),
 			},
-		) {}
+		) {
+			static readonly layer = Layer.effect(this, this.make);
+		}
 
 		return Effect.gen(function* () {
 			const myTool = yield* tool({
@@ -313,7 +315,7 @@ describe('tool', () => {
 			expect(result).toBe('Paris: rainy');
 		}).pipe(
 			Effect.scoped,
-			Effect.provide(WeatherService.Default),
+			Effect.provide(WeatherService.layer),
 			Effect.runPromise,
 		);
 	});

@@ -7,22 +7,22 @@ import { wrapStep } from './step';
 
 describe('cronToString', () => {
 	test('converts simple cron', () => {
-		const cron = Cron.unsafeParse('5 4 * * *');
+		const cron = Cron.parseUnsafe('5 4 * * *');
 		expect(cronToString(cron)).toBe('5 4 * * *');
 	});
 
 	test('converts cron with all fields', () => {
-		const cron = Cron.unsafeParse('0 12 1 6 3');
+		const cron = Cron.parseUnsafe('0 12 1 6 3');
 		expect(cronToString(cron)).toBe('0 12 1 6 3');
 	});
 
 	test('converts every-minute cron', () => {
-		const cron = Cron.unsafeParse('* * * * *');
+		const cron = Cron.parseUnsafe('* * * * *');
 		expect(cronToString(cron)).toBe('* * * * *');
 	});
 
 	test('converts cron with multiple values', () => {
-		const cron = Cron.unsafeParse('0,30 * * * *');
+		const cron = Cron.parseUnsafe('0,30 * * * *');
 		expect(cronToString(cron)).toBe('0,30 * * * *');
 	});
 });
