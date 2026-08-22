@@ -1,6 +1,6 @@
-import { FetchHttpClient, HttpClient } from '@effect/platform';
 import { expect, layer } from '@effect/vitest';
 import { Cause, Data, Effect, Layer, Ref } from 'effect';
+import { FetchHttpClient, HttpClient } from 'effect/unstable/http';
 import { serverTester } from './__test__/utils.ts';
 import { basicHandler } from './basic.ts';
 import { createFetchHandler } from './fetch-handler.ts';
@@ -56,20 +56,22 @@ layer(
 					expect(yield* call('/one')).toEqual('Internal Server Error');
 					yield* Effect.gen(function* () {
 						const cause = (yield* Ref.get(errors))[0];
-						const isDie = cause._tag === 'Die';
-						expect(isDie, `Cause is ${cause._tag}`).toEqual(true);
-						if (isDie) {
-							expect(cause.defect).toBeInstanceOf(AlsoError);
+						const reason = cause.reasons[0];
+						const isDie = reason !== undefined && Cause.isDieReason(reason);
+						expect(isDie, `Cause is ${reason?._tag}`).toEqual(true);
+						if (isDie && Cause.isDieReason(reason)) {
+							expect(reason.defect).toBeInstanceOf(AlsoError);
 						}
 					});
 
 					expect(yield* call('/two')).toEqual('Internal Server Error');
 					yield* Effect.gen(function* () {
 						const cause = (yield* Ref.get(errors))[1];
-						const isFailType = Cause.isFailType(cause);
-						expect(isFailType, `Cause is ${cause._tag}`).toEqual(true);
-						if (isFailType) {
-							expect(cause.error).toBeInstanceOf(CustomError);
+						const reason = cause.reasons[0];
+						const isFail = reason !== undefined && Cause.isFailReason(reason);
+						expect(isFail, `Cause is ${reason?._tag}`).toEqual(true);
+						if (isFail && Cause.isFailReason(reason)) {
+							expect(reason.error).toBeInstanceOf(CustomError);
 						}
 					});
 				}),

@@ -1,4 +1,5 @@
-import { Effect, Runtime } from 'effect';
+import type { Context } from 'effect';
+import { Effect } from 'effect';
 
 type LogParams = [obj: unknown, msg?: string];
 function extractParams(...[obj, msg]: LogParams) {
@@ -21,7 +22,7 @@ export type SyncLogger = {
 };
 
 function makeSyncLogger(
-	runtime: Runtime.Runtime<never>,
+	services: Context.Context<never>,
 	annotations: LogAnnotations,
 ): SyncLogger {
 	const run = (e: Effect.Effect<void, never, never>) => {
@@ -29,7 +30,7 @@ function makeSyncLogger(
 			Object.keys(annotations).length > 0
 				? e.pipe(Effect.annotateLogs(annotations))
 				: e;
-		void Runtime.runPromise(runtime)(annotated);
+		void Effect.runPromiseWith(services)(annotated);
 	};
 
 	return {
@@ -42,15 +43,15 @@ function makeSyncLogger(
 		error: (...params: Parameters<typeof Logger.error>) =>
 			run(Logger.error(...params)),
 		child: (childAnnotations: LogAnnotations) =>
-			makeSyncLogger(runtime, { ...annotations, ...childAnnotations }),
+			makeSyncLogger(services, { ...annotations, ...childAnnotations }),
 	};
 }
 
 export namespace Logger {
 	export const sync = (annotations?: LogAnnotations) =>
 		Effect.gen(function* () {
-			const runtime = yield* Effect.runtime();
-			return makeSyncLogger(runtime, annotations ?? {});
+			const services = yield* Effect.context<never>();
+			return makeSyncLogger(services, annotations ?? {});
 		});
 
 	// --

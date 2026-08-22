@@ -19,7 +19,7 @@ export function serverTester<
 		const port = yield* getPort();
 		const ready = yield* Deferred.make<SERVER_OUTPUT>();
 
-		const fiber = yield* Effect.fork(
+		const fiber = yield* Effect.forkChild(
 			Effect.scoped(
 				Effect.gen(function* () {
 					const res = opt.server({ port });
