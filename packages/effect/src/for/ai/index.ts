@@ -90,16 +90,22 @@ export function generateText<
 	}).pipe(Effect.scoped);
 }
 
-type StreamTextOriginalParams = Parameters<typeof Ai.streamText>[0];
-type StreamTextReturn = ReturnType<typeof Ai.streamText>;
-
-export function streamText<R = never>(
+export function streamText<
+	TOOLS extends Ai.ToolSet = Ai.ToolSet,
+	RUNTIME_CONTEXT extends Record<string, unknown> = Record<string, unknown>,
+	OUTPUT extends Ai.Output.Output = Ai.Output.Output<string, string, never>,
+	R = never,
+>(
 	params: EffectifyCallbacks<
-		StreamTextOriginalParams,
+		Parameters<typeof Ai.streamText<TOOLS, RUNTIME_CONTEXT, OUTPUT>>[0],
 		StreamTextCallbackKeys,
 		R
 	>,
-): Effect.Effect<StreamTextReturn, AiError, R | Scope.Scope> {
+): Effect.Effect<
+	ReturnType<typeof Ai.streamText<TOOLS, RUNTIME_CONTEXT, OUTPUT>>,
+	AiError,
+	R | Scope.Scope
+> {
 	return Effect.gen(function* () {
 		const runPromise = yield* FiberSet.makeRuntimePromise<R>();
 
@@ -126,7 +132,7 @@ export function streamText<R = never>(
 				runPromise,
 				params.experimental_onToolCallFinish,
 			),
-		} as StreamTextOriginalParams;
+		} as Parameters<typeof Ai.streamText<TOOLS, RUNTIME_CONTEXT, OUTPUT>>[0];
 
 		try {
 			return Ai.streamText(originalParams);
