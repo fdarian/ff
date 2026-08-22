@@ -90,6 +90,54 @@ describe('generateText', () => {
 			expect(onFinishSpy).toHaveBeenCalledWith(finishEvent);
 		}).pipe(Effect.runPromise);
 	});
+
+	// v7 renamed onFinish -> onEnd and onStepFinish -> onStepEnd; both names
+	// must be wrapped so callers on either name get Effect ergonomics.
+	test('wraps onEnd callback (v7 rename of onFinish)', () => {
+		const endEvent = { text: 'done', steps: [], totalUsage: {} };
+		vi.mocked(Ai.generateText).mockImplementation(
+			// biome-ignore lint/suspicious/noExplicitAny: test mock
+			(async (params: any) => {
+				if (params.onEnd) await params.onEnd(endEvent);
+				return { text: 'done' };
+			}) as never,
+		);
+
+		const onEndSpy = vi.fn(() => Effect.void);
+
+		return Effect.gen(function* () {
+			yield* generateText({
+				model: {} as Ai.LanguageModel,
+				prompt: 'test',
+				onEnd: onEndSpy,
+			});
+
+			expect(onEndSpy).toHaveBeenCalledWith(endEvent);
+		}).pipe(Effect.runPromise);
+	});
+
+	test('wraps onStepEnd callback (v7 rename of onStepFinish)', () => {
+		const stepResult = { text: 'step1' };
+		vi.mocked(Ai.generateText).mockImplementation(
+			// biome-ignore lint/suspicious/noExplicitAny: test mock
+			(async (params: any) => {
+				if (params.onStepEnd) await params.onStepEnd(stepResult);
+				return { text: 'done' };
+			}) as never,
+		);
+
+		const onStepEndSpy = vi.fn(() => Effect.void);
+
+		return Effect.gen(function* () {
+			yield* generateText({
+				model: {} as Ai.LanguageModel,
+				prompt: 'test',
+				onStepEnd: onStepEndSpy,
+			});
+
+			expect(onStepEndSpy).toHaveBeenCalledWith(stepResult);
+		}).pipe(Effect.runPromise);
+	});
 });
 
 describe('streamText', () => {
@@ -148,6 +196,31 @@ describe('streamText', () => {
 			});
 
 			expect(onFinishSpy).toHaveBeenCalledWith(finishEvent);
+		}).pipe(Effect.scoped, Effect.runPromise);
+	});
+
+	// v7 renamed onFinish -> onEnd; both names must be wrapped so callers on
+	// either name get Effect ergonomics (same event, one calling convention).
+	test('wraps onEnd callback (v7 rename of onFinish)', () => {
+		const endEvent = { text: 'done', steps: [], totalUsage: {} };
+		vi.mocked(Ai.streamText).mockImplementation(
+			// biome-ignore lint/suspicious/noExplicitAny: test mock
+			((params: any) => {
+				if (params.onEnd) params.onEnd(endEvent);
+				return { textStream: 'mock' };
+			}) as never,
+		);
+
+		const onEndSpy = vi.fn(() => Effect.void);
+
+		return Effect.gen(function* () {
+			yield* streamText({
+				model: {} as Ai.LanguageModel,
+				prompt: 'test',
+				onEnd: onEndSpy,
+			});
+
+			expect(onEndSpy).toHaveBeenCalledWith(endEvent);
 		}).pipe(Effect.scoped, Effect.runPromise);
 	});
 });

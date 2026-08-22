@@ -15,24 +15,50 @@ function wrapCallback(runPromise: any, callback: any) {
 	return (...args: any[]) => runPromise(callback(...args));
 }
 
-type GenerateTextCallbackKeys =
-	| 'onStepFinish'
-	| 'onFinish'
-	| 'experimental_onStart'
-	| 'experimental_onStepStart'
-	| 'experimental_onToolCallStart'
-	| 'experimental_onToolCallFinish';
+// biome-ignore lint/suspicious/noExplicitAny: internal bridging helper, type safety enforced at public API boundary
+function wrapCallbacks(runPromise: any, params: any, keys: readonly string[]) {
+	const wrapped: Record<string, unknown> = {};
+	for (const key of keys) {
+		wrapped[key] = wrapCallback(runPromise, params[key]);
+	}
+	return wrapped;
+}
 
-type StreamTextCallbackKeys =
-	| 'onChunk'
-	| 'onError'
-	| 'onFinish'
-	| 'onAbort'
-	| 'onStepFinish'
-	| 'experimental_onStart'
-	| 'experimental_onStepStart'
-	| 'experimental_onToolCallStart'
-	| 'experimental_onToolCallFinish';
+/**
+ * v7 renamed several callbacks (e.g. onStepFinish -> onStepEnd, onFinish ->
+ * onEnd, experimental_onStart -> onStart) and added onLanguageModelCallStart /
+ * onLanguageModelCallEnd. Both the old and new names are listed here so
+ * EffectifyCallbacks rewrites whichever one a caller uses — the SDK resolves
+ * old/new pairs internally with `newName ?? oldName`, and an explicit
+ * `undefined` for an unused key doesn't disturb that resolution.
+ */
+const GENERATE_TEXT_CALLBACK_KEYS = [
+	'onStepFinish',
+	'onStepEnd',
+	'onFinish',
+	'onEnd',
+	'onStart',
+	'experimental_onStart',
+	'onStepStart',
+	'experimental_onStepStart',
+	'onToolExecutionStart',
+	'experimental_onToolCallStart',
+	'onToolExecutionEnd',
+	'experimental_onToolCallFinish',
+	'onLanguageModelCallStart',
+	'experimental_onLanguageModelCallStart',
+	'onLanguageModelCallEnd',
+	'experimental_onLanguageModelCallEnd',
+] as const;
+type GenerateTextCallbackKeys = (typeof GENERATE_TEXT_CALLBACK_KEYS)[number];
+
+const STREAM_TEXT_CALLBACK_KEYS = [
+	...GENERATE_TEXT_CALLBACK_KEYS,
+	'onChunk',
+	'onError',
+	'onAbort',
+] as const;
+type StreamTextCallbackKeys = (typeof STREAM_TEXT_CALLBACK_KEYS)[number];
 
 type EffectifyCallbacks<T, Keys extends string, R> = Omit<T, Keys & keyof T> & {
 	[K in Keys & keyof T]?: NonNullable<T[K]> extends (
@@ -63,24 +89,7 @@ export function generateText<
 
 		const originalParams = {
 			...params,
-			onStepFinish: wrapCallback(runPromise, params.onStepFinish),
-			onFinish: wrapCallback(runPromise, params.onFinish),
-			experimental_onStart: wrapCallback(
-				runPromise,
-				params.experimental_onStart,
-			),
-			experimental_onStepStart: wrapCallback(
-				runPromise,
-				params.experimental_onStepStart,
-			),
-			experimental_onToolCallStart: wrapCallback(
-				runPromise,
-				params.experimental_onToolCallStart,
-			),
-			experimental_onToolCallFinish: wrapCallback(
-				runPromise,
-				params.experimental_onToolCallFinish,
-			),
+			...wrapCallbacks(runPromise, params, GENERATE_TEXT_CALLBACK_KEYS),
 		} as Parameters<typeof Ai.generateText<TOOLS, RUNTIME_CONTEXT, OUTPUT>>[0];
 
 		return yield* Effect.tryPromise({
@@ -111,27 +120,7 @@ export function streamText<
 
 		const originalParams = {
 			...params,
-			onChunk: wrapCallback(runPromise, params.onChunk),
-			onError: wrapCallback(runPromise, params.onError),
-			onFinish: wrapCallback(runPromise, params.onFinish),
-			onAbort: wrapCallback(runPromise, params.onAbort),
-			onStepFinish: wrapCallback(runPromise, params.onStepFinish),
-			experimental_onStart: wrapCallback(
-				runPromise,
-				params.experimental_onStart,
-			),
-			experimental_onStepStart: wrapCallback(
-				runPromise,
-				params.experimental_onStepStart,
-			),
-			experimental_onToolCallStart: wrapCallback(
-				runPromise,
-				params.experimental_onToolCallStart,
-			),
-			experimental_onToolCallFinish: wrapCallback(
-				runPromise,
-				params.experimental_onToolCallFinish,
-			),
+			...wrapCallbacks(runPromise, params, STREAM_TEXT_CALLBACK_KEYS),
 		} as Parameters<typeof Ai.streamText<TOOLS, RUNTIME_CONTEXT, OUTPUT>>[0];
 
 		try {
