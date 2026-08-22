@@ -44,16 +44,17 @@ type EffectifyCallbacks<T, Keys extends string, R> = Omit<T, Keys & keyof T> & {
 
 export function generateText<
 	TOOLS extends Ai.ToolSet = Ai.ToolSet,
+	RUNTIME_CONTEXT extends Record<string, unknown> = Record<string, unknown>,
 	OUTPUT extends Ai.Output.Output = Ai.Output.Output<string, string>,
 	R = never,
 >(
 	params: EffectifyCallbacks<
-		Parameters<typeof Ai.generateText<TOOLS, OUTPUT>>[0],
+		Parameters<typeof Ai.generateText<TOOLS, RUNTIME_CONTEXT, OUTPUT>>[0],
 		GenerateTextCallbackKeys,
 		R
 	>,
 ): Effect.Effect<
-	Awaited<ReturnType<typeof Ai.generateText<TOOLS, OUTPUT>>>,
+	Awaited<ReturnType<typeof Ai.generateText<TOOLS, RUNTIME_CONTEXT, OUTPUT>>>,
 	AiError,
 	R
 > {
@@ -80,7 +81,7 @@ export function generateText<
 				runPromise,
 				params.experimental_onToolCallFinish,
 			),
-		} as Parameters<typeof Ai.generateText<TOOLS, OUTPUT>>[0];
+		} as Parameters<typeof Ai.generateText<TOOLS, RUNTIME_CONTEXT, OUTPUT>>[0];
 
 		return yield* Effect.tryPromise({
 			try: () => Ai.generateText(originalParams),
@@ -137,16 +138,23 @@ export function streamText<R = never>(
 	});
 }
 
-type OriginalToolDef<INPUT, OUTPUT> = Parameters<
-	typeof Ai.tool<INPUT, OUTPUT>
->[0];
+type OriginalToolDef<
+	INPUT,
+	OUTPUT,
+	CONTEXT extends Record<string, unknown>,
+> = Parameters<typeof Ai.tool<INPUT, OUTPUT, CONTEXT>>[0];
 
 type ToolModelOutput = Awaited<
 	ReturnType<NonNullable<Ai.Tool<unknown, unknown>['toModelOutput']>>
 >;
 
-type EffectToolDef<INPUT, OUTPUT, R> = Omit<
-	OriginalToolDef<INPUT, OUTPUT>,
+type EffectToolDef<
+	INPUT,
+	OUTPUT,
+	CONTEXT extends Record<string, unknown>,
+	R,
+> = Omit<
+	OriginalToolDef<INPUT, OUTPUT, CONTEXT>,
 	| 'execute'
 	| 'onInputStart'
 	| 'onInputDelta'
@@ -155,16 +163,16 @@ type EffectToolDef<INPUT, OUTPUT, R> = Omit<
 > & {
 	execute?: (
 		input: INPUT,
-		options: Ai.ToolExecutionOptions,
+		options: Ai.ToolExecutionOptions<CONTEXT>,
 	) => Effect.Effect<OUTPUT, unknown, R>;
 	onInputStart?: (
-		options: Ai.ToolExecutionOptions,
+		options: Ai.ToolExecutionOptions<CONTEXT>,
 	) => Effect.Effect<void, never, R>;
 	onInputDelta?: (
-		options: { inputTextDelta: string } & Ai.ToolExecutionOptions,
+		options: { inputTextDelta: string } & Ai.ToolExecutionOptions<CONTEXT>,
 	) => Effect.Effect<void, never, R>;
 	onInputAvailable?: (
-		options: { input: INPUT } & Ai.ToolExecutionOptions,
+		options: { input: INPUT } & Ai.ToolExecutionOptions<CONTEXT>,
 	) => Effect.Effect<void, never, R>;
 	toModelOutput?: (options: {
 		toolCallId: string;
@@ -173,16 +181,21 @@ type EffectToolDef<INPUT, OUTPUT, R> = Omit<
 	}) => Effect.Effect<ToolModelOutput, never, R>;
 };
 
-export function tool<INPUT, OUTPUT, R = never>(
-	params: EffectToolDef<INPUT, OUTPUT, R>,
-): Effect.Effect<Ai.Tool<INPUT, OUTPUT>, never, R | Scope.Scope> {
+export function tool<
+	INPUT,
+	OUTPUT,
+	CONTEXT extends Record<string, unknown> = Record<string, unknown>,
+	R = never,
+>(
+	params: EffectToolDef<INPUT, OUTPUT, CONTEXT, R>,
+): Effect.Effect<Ai.Tool<INPUT, OUTPUT, CONTEXT>, never, R | Scope.Scope> {
 	return Effect.gen(function* () {
 		const runPromise = yield* FiberSet.makeRuntimePromise<R>();
 
 		const originalParams = {
 			...params,
 			...(params.execute && {
-				execute: (input: INPUT, options: Ai.ToolExecutionOptions) =>
+				execute: (input: INPUT, options: Ai.ToolExecutionOptions<CONTEXT>) =>
 					// biome-ignore lint/style/noNonNullAssertion: guarded by truthiness check
 					runPromise(params.execute!(input, options)),
 			}),
@@ -198,7 +211,7 @@ export function tool<INPUT, OUTPUT, R = never>(
 					// biome-ignore lint/style/noNonNullAssertion: guarded by truthiness check
 					runPromise(params.toModelOutput!(options)),
 			}),
-		} as OriginalToolDef<INPUT, OUTPUT>;
+		} as OriginalToolDef<INPUT, OUTPUT, CONTEXT>;
 
 		return Ai.tool(originalParams);
 	});

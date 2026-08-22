@@ -8,7 +8,6 @@ export const createTurnHandler = Effect.fn(function* (ctx: {
 	identifier: ThreadIdentifier;
 }) {
 	const store = yield* ConversationStore;
-	let lastIndex = 0;
 	return {
 		getHistory: Effect.fn(function* (params?: { windowSize?: number }) {
 			const windowSize = params?.windowSize ?? 10;
@@ -29,13 +28,12 @@ export const createTurnHandler = Effect.fn(function* (ctx: {
 		onStep: Effect.fn(function* <TOOLS extends Ai.ToolSet>(
 			step: Ai.StepResult<TOOLS>,
 		) {
-			const newMessages = step.response.messages.slice(lastIndex);
-			lastIndex = step.response.messages.length;
-
 			yield* store.saveMessages({
 				resourceId: ctx.identifier.resourceId,
 				threadId: ctx.identifier.threadId,
-				messages: newMessages.map(ConversationMessage.fromModelMessage),
+				messages: step.response.messages.map(
+					ConversationMessage.fromModelMessage,
+				),
 			});
 		}),
 	};

@@ -175,6 +175,7 @@ describe('tool', () => {
 						{
 							toolCallId: 'test-id',
 							messages: [],
+							context: {},
 						},
 					),
 				),
@@ -230,6 +231,7 @@ describe('tool', () => {
 						{
 							toolCallId: 'test-id',
 							messages: [],
+							context: {},
 						},
 					),
 				),
