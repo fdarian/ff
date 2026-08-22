@@ -68,19 +68,57 @@ type EffectifyCallbacks<T, Keys extends string, R> = Omit<T, Keys & keyof T> & {
 		: T[K];
 };
 
+type OriginalGenerateTextDef<
+	TOOLS extends Ai.ToolSet,
+	RUNTIME_CONTEXT extends Record<string, unknown>,
+	OUTPUT extends Ai.Output.Output,
+> = Parameters<typeof Ai.generateText<TOOLS, RUNTIME_CONTEXT, OUTPUT>>[0];
+
+type GenerateTextResult<
+	TOOLS extends Ai.ToolSet,
+	RUNTIME_CONTEXT extends Record<string, unknown>,
+	OUTPUT extends Ai.Output.Output,
+> = Awaited<ReturnType<typeof Ai.generateText<TOOLS, RUNTIME_CONTEXT, OUTPUT>>>;
+
+/**
+ * `OriginalGenerateTextDef` stays deferred while TOOLS/RUNTIME_CONTEXT/OUTPUT
+ * are still being inferred, so TS never walks into `output?: OUTPUT` to infer
+ * it — of `ai`'s OUTPUT positions, that's the one bare (non-NoInfer) site.
+ * Omit those three inference sites off it and intersect a plain, non-deferred
+ * object type carrying them: TS merges inference candidates across
+ * intersection constituents independently, so the params type callers see
+ * restores inference. `OriginalGenerateTextDef` itself is left untouched (and
+ * used as-is for the internal cast back into `ai.generateText`) because
+ * flattening it here would collapse its `prompt`/`messages` discriminated
+ * union and break that call.
+ */
+type EffectGenerateTextDef<
+	TOOLS extends Ai.ToolSet,
+	RUNTIME_CONTEXT extends Record<string, unknown>,
+	OUTPUT extends Ai.Output.Output,
+	R,
+> = EffectifyCallbacks<
+	Omit<
+		OriginalGenerateTextDef<TOOLS, RUNTIME_CONTEXT, OUTPUT>,
+		'tools' | 'runtimeContext' | 'output'
+	>,
+	GenerateTextCallbackKeys,
+	R
+> & {
+	tools?: TOOLS;
+	runtimeContext?: RUNTIME_CONTEXT;
+	output?: OUTPUT;
+};
+
 export function generateText<
 	TOOLS extends Ai.ToolSet = Ai.ToolSet,
 	RUNTIME_CONTEXT extends Record<string, unknown> = Record<string, unknown>,
 	OUTPUT extends Ai.Output.Output = Ai.Output.Output<string, string>,
 	R = never,
 >(
-	params: EffectifyCallbacks<
-		Parameters<typeof Ai.generateText<TOOLS, RUNTIME_CONTEXT, OUTPUT>>[0],
-		GenerateTextCallbackKeys,
-		R
-	>,
+	params: EffectGenerateTextDef<TOOLS, RUNTIME_CONTEXT, OUTPUT, R>,
 ): Effect.Effect<
-	Awaited<ReturnType<typeof Ai.generateText<TOOLS, RUNTIME_CONTEXT, OUTPUT>>>,
+	GenerateTextResult<TOOLS, RUNTIME_CONTEXT, OUTPUT>,
 	AiError,
 	R
 > {
@@ -90,7 +128,7 @@ export function generateText<
 		const originalParams = {
 			...params,
 			...wrapCallbacks(runPromise, params, GENERATE_TEXT_CALLBACK_KEYS),
-		} as Parameters<typeof Ai.generateText<TOOLS, RUNTIME_CONTEXT, OUTPUT>>[0];
+		} as OriginalGenerateTextDef<TOOLS, RUNTIME_CONTEXT, OUTPUT>;
 
 		return yield* Effect.tryPromise({
 			try: () => Ai.generateText(originalParams),
@@ -99,19 +137,46 @@ export function generateText<
 	}).pipe(Effect.scoped);
 }
 
+type OriginalStreamTextDef<
+	TOOLS extends Ai.ToolSet,
+	RUNTIME_CONTEXT extends Record<string, unknown>,
+	OUTPUT extends Ai.Output.Output,
+> = Parameters<typeof Ai.streamText<TOOLS, RUNTIME_CONTEXT, OUTPUT>>[0];
+
+type StreamTextResult<
+	TOOLS extends Ai.ToolSet,
+	RUNTIME_CONTEXT extends Record<string, unknown>,
+	OUTPUT extends Ai.Output.Output,
+> = ReturnType<typeof Ai.streamText<TOOLS, RUNTIME_CONTEXT, OUTPUT>>;
+
+/** Same deferred-`Parameters` inference problem as {@link EffectGenerateTextDef}. */
+type EffectStreamTextDef<
+	TOOLS extends Ai.ToolSet,
+	RUNTIME_CONTEXT extends Record<string, unknown>,
+	OUTPUT extends Ai.Output.Output,
+	R,
+> = EffectifyCallbacks<
+	Omit<
+		OriginalStreamTextDef<TOOLS, RUNTIME_CONTEXT, OUTPUT>,
+		'tools' | 'runtimeContext' | 'output'
+	>,
+	StreamTextCallbackKeys,
+	R
+> & {
+	tools?: TOOLS;
+	runtimeContext?: RUNTIME_CONTEXT;
+	output?: OUTPUT;
+};
+
 export function streamText<
 	TOOLS extends Ai.ToolSet = Ai.ToolSet,
 	RUNTIME_CONTEXT extends Record<string, unknown> = Record<string, unknown>,
 	OUTPUT extends Ai.Output.Output = Ai.Output.Output<string, string, never>,
 	R = never,
 >(
-	params: EffectifyCallbacks<
-		Parameters<typeof Ai.streamText<TOOLS, RUNTIME_CONTEXT, OUTPUT>>[0],
-		StreamTextCallbackKeys,
-		R
-	>,
+	params: EffectStreamTextDef<TOOLS, RUNTIME_CONTEXT, OUTPUT, R>,
 ): Effect.Effect<
-	ReturnType<typeof Ai.streamText<TOOLS, RUNTIME_CONTEXT, OUTPUT>>,
+	StreamTextResult<TOOLS, RUNTIME_CONTEXT, OUTPUT>,
 	AiError,
 	R | Scope.Scope
 > {
@@ -121,7 +186,7 @@ export function streamText<
 		const originalParams = {
 			...params,
 			...wrapCallbacks(runPromise, params, STREAM_TEXT_CALLBACK_KEYS),
-		} as Parameters<typeof Ai.streamText<TOOLS, RUNTIME_CONTEXT, OUTPUT>>[0];
+		} as OriginalStreamTextDef<TOOLS, RUNTIME_CONTEXT, OUTPUT>;
 
 		try {
 			return Ai.streamText(originalParams);
@@ -143,6 +208,14 @@ type ToolModelOutput = Awaited<
 	ReturnType<NonNullable<Ai.Tool<unknown, unknown>['toModelOutput']>>
 >;
 
+/**
+ * Same deferred-`Parameters` inference problem as {@link EffectGenerateTextDef},
+ * this time for `contextSchema?: FlexibleSchema<CONTEXT>` — the bare (non-
+ * NoInfer) inference site `ai` exposes for CONTEXT. `OriginalToolDef` is left
+ * untouched (and used as-is for the internal cast back into `ai.tool`)
+ * because flattening it there would break overload resolution across `Tool`'s
+ * FunctionTool/DynamicTool/ProviderDefinedTool/ProviderExecutedTool union.
+ */
 type EffectToolDef<
 	INPUT,
 	OUTPUT,
@@ -155,6 +228,7 @@ type EffectToolDef<
 	| 'onInputDelta'
 	| 'onInputAvailable'
 	| 'toModelOutput'
+	| 'contextSchema'
 > & {
 	execute?: (
 		input: INPUT,
@@ -174,13 +248,14 @@ type EffectToolDef<
 		input: INPUT;
 		output: OUTPUT;
 	}) => Effect.Effect<ToolModelOutput, never, R>;
+	contextSchema?: Ai.FlexibleSchema<CONTEXT>;
 };
 
 export function tool<
 	INPUT,
 	OUTPUT,
-	CONTEXT extends Record<string, unknown> = Record<string, unknown>,
 	R = never,
+	CONTEXT extends Record<string, unknown> = Record<string, unknown>,
 >(
 	params: EffectToolDef<INPUT, OUTPUT, CONTEXT, R>,
 ): Effect.Effect<Ai.Tool<INPUT, OUTPUT, CONTEXT>, never, R | Scope.Scope> {
