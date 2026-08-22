@@ -44,13 +44,13 @@ export namespace CacheAdapter {
 	export function redis<Key, Value>(opts: {
 		client: RedisClient;
 		keyPrefix: string;
-		schema?: Schema.Schema<Value, string>;
+		schema?: Schema.Codec<Value, string>;
 	}): CacheAdapter<Key, Value> {
 		const encodeKey = (key: Key) => `${opts.keyPrefix}:${JSON.stringify(key)}`;
 
 		const encodeEntry = (entry: CacheEntry<Value>): Effect.Effect<string> => {
 			if (opts.schema) {
-				return Schema.encode(opts.schema)(entry.value).pipe(
+				return Schema.encodeEffect(opts.schema)(entry.value).pipe(
 					Effect.map((encoded) =>
 						JSON.stringify({ value: encoded, storedAt: entry.storedAt }),
 					),
@@ -63,7 +63,7 @@ export namespace CacheAdapter {
 		const decodeEntry = (raw: string): Effect.Effect<CacheEntry<Value>> => {
 			const parsed = JSON.parse(raw);
 			if (opts.schema) {
-				return Schema.decode(opts.schema)(parsed.value).pipe(
+				return Schema.decodeEffect(opts.schema)(parsed.value).pipe(
 					Effect.map((value) => ({
 						value,
 						storedAt: parsed.storedAt as number,
