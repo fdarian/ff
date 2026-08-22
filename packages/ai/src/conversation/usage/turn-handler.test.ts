@@ -58,9 +58,6 @@ describe('saveMessage', () => {
 		response: Exclude<Ai.AssistantContent, string>;
 	};
 
-	const MockStore = createMockStore();
-	const TestLayer = MockStore.layer;
-
 	const run = (params: {
 		steps: [UserStep, ...Array<SubsequentStep>];
 		tools?: Ai.ToolSet;
@@ -125,7 +122,13 @@ Available steps: ${JSON.stringify(params.steps, null, 2)}`,
 					}),
 				),
 			).toMatchSnapshot();
-		}).pipe(Effect.provide(TestLayer), (e) => Effect.runPromise(e));
+		}).pipe(
+			// Fresh store per call: the two tests below share the same
+			// resourceId/threadId, so a shared store would leak one test's
+			// messages into the other's snapshot depending on run order.
+			Effect.provide(createMockStore().layer),
+			(e) => Effect.runPromise(e),
+		);
 
 	test('simple one step', async () =>
 		run({
