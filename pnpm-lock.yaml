@@ -356,8 +356,8 @@ importers:
         specifier: ^3.12.0
         version: 3.12.0
       ff-effect:
-        specifier: ^0.0.14
-        version: 0.0.14(@effect/platform@0.94.5(effect@3.22.1))(ai@6.0.261(zod@4.4.3))(drizzle-orm@0.44.7(@electric-sql/pglite@0.3.16)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(@types/pg@8.15.6)(bun-types@1.4.0)(postgres@3.4.9))(effect@3.22.1)(inngest@3.54.2(@opentelemetry/core@2.10.0(@opentelemetry/api@1.9.1))(supports-color@7.2.0)(typescript@5.9.3)(zod@4.4.3))
+        specifier: workspace:^
+        version: link:../effect
       inquirer:
         specifier: ^12.10.0
         version: 12.11.1(@types/node@26.2.0)
@@ -376,12 +376,6 @@ importers:
 
 packages:
 
-  '@ai-sdk/gateway@3.0.177':
-    resolution: {integrity: sha512-U579dA3K2UcezpzJHjyw6UhctFtzFRKOSIrAgxr77teluPGP7vj8aLJpZvEEPf+JbUqbvsHRKKYZzip/+NQ89A==}
-    engines: {node: '>=18'}
-    peerDependencies:
-      zod: ^3.25.76 || ^4.1.8
-
   '@ai-sdk/gateway@4.0.61':
     resolution: {integrity: sha512-b+PRdwM9/x0427CKqfd4zpCRgSzQeZsCZ9PtBOaLU2S1l+eRj8++Bwt766VnLerd/F5snKWAq13miV+OPcvclA==}
     engines: {node: '>=22'}
@@ -394,21 +388,11 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  '@ai-sdk/provider-utils@4.0.46':
-    resolution: {integrity: sha512-tEtld97plCFiYevsJuOkGkeuhQndeMWFBVrJS4AjnbD5AqrNSXRCe0p+BZ3Cju/sxDeeZ9ym3q9YUV8fASA7aQ==}
-    engines: {node: '>=18.17'}
-    peerDependencies:
-      zod: ^3.25.76 || ^4.1.8
-
   '@ai-sdk/provider-utils@5.0.28':
     resolution: {integrity: sha512-TnHUyd/rCYQqHg5RuiOaz/hUql6U+kbUaBW0Rp+0N5UhnAInA9CzzV0HXvuAAPwppDsK6fAx9Rd+tRawpJ/3pg==}
     engines: {node: '>=22'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
-
-  '@ai-sdk/provider@3.0.15':
-    resolution: {integrity: sha512-XeZW1CcDF2GMbH4wejW6xBRI2QCOgnkVYUnxoeDadB1mf85riL2bMUeDoh+6gJ/r4mjNfzUPW8OjLjvwTP0u1Q==}
-    engines: {node: '>=18'}
 
   '@ai-sdk/provider@4.0.7':
     resolution: {integrity: sha512-6or44XprPzKbr8zkmzosowSE0pxkvJcoojBL+mCZvPUt3kvXp3XSNqeVun9golb1acEfSo6yaEBRT18h2VU+1Q==}
@@ -2789,12 +2773,6 @@ packages:
     resolution: {integrity: sha512-MnA+YT8fwfJPgBx3m60MNqakm30XOkyIoH1y6huTQvC0PwZG7ki8NacLBcrPbNoo8vEZy7Jpuk7+jMO+CUovTQ==}
     engines: {node: '>= 14'}
 
-  ai@6.0.261:
-    resolution: {integrity: sha512-W+S9pGvYxRN2lUrdTK20GRp+9HuMzsZexYb2tWWqlDBHuaHQoRn2Iiz4VMcV3+QaZRC8IuKBcMgHtMn215OBiQ==}
-    engines: {node: '>=18'}
-    peerDependencies:
-      zod: ^3.25.76 || ^4.1.8
-
   ai@7.0.76:
     resolution: {integrity: sha512-Mytm/RFJzwJ0nzXiHYAE3dgNpFG/2K2Tks5alwm+PzAQeB6RJAJ97eGuZ8wssy66PcvtGWGIscS4tRi6dg0KLQ==}
     engines: {node: '>=22'}
@@ -3286,24 +3264,6 @@ packages:
   fetch-blob@3.2.0:
     resolution: {integrity: sha512-7yAQpD2UMJzLi1Dqv7qFYnPbaPx7ZfFK6PiIxQ4PfkGPyNyl2Ugx+a/umUonmKqjhM4DnfbMvdX6otXq83soQQ==}
     engines: {node: ^12.20 || >= 14.13}
-
-  ff-effect@0.0.14:
-    resolution: {integrity: sha512-EORbCf3jWKoPrDw0jPXjwaS3vbFwBadrNjeZ58XaEne4zOs6mIcqFwCcwd4A6zujnw0RSubp/QzhvviuY2OrQQ==}
-    peerDependencies:
-      '@effect/platform': ^0.93.6
-      ai: ^6
-      drizzle-orm: ^0.44.7
-      effect: ^3.19.3
-      inngest: ^3
-    peerDependenciesMeta:
-      '@effect/platform':
-        optional: true
-      ai:
-        optional: true
-      drizzle-orm:
-        optional: true
-      inngest:
-        optional: true
 
   fill-range@7.1.1:
     resolution: {integrity: sha512-YsGpe3WHLK8ZYi4tWDg2Jy3ebRz2rXowDxnld4bkQB00cc/1Zw9AWnC0i9ztDJitivtQvaI9KaLyKrc+hBW0yg==}
@@ -4239,10 +4199,6 @@ packages:
   undici-types@8.3.0:
     resolution: {integrity: sha512-j375ScV60dom+YkPFIfTLcOiPxkN/buHz5GobjLhixFuANaNs3C9l4GmrWqejgXWJ7BbJcFYpTEUkS1Ge8bpZQ==}
 
-  undici@6.28.0:
-    resolution: {integrity: sha512-LIY910g9TI13YS95lrMFrs8Rm/u/irgHeTWoKCoteeJ04CUJ92eEfj0rVn+7VKMPBpUPiUoBKfhNyLI23EE/KA==}
-    engines: {node: '>=18.17'}
-
   undici@7.29.0:
     resolution: {integrity: sha512-IDxfleLmmbSskfWSUATiN1nfn2rDuvnMOqb5CWR92iIfojA0Ud+ulOAAEQ57LPr9rWmsreUyf5lwyao+7GNNVw==}
     engines: {node: '>=20.18.1'}
@@ -4428,14 +4384,6 @@ packages:
 
 snapshots:
 
-  '@ai-sdk/gateway@3.0.177(zod@4.4.3)':
-    dependencies:
-      '@ai-sdk/provider': 3.0.15
-      '@ai-sdk/provider-utils': 4.0.46(zod@4.4.3)
-      '@vercel/oidc': 3.2.0
-      zod: 4.4.3
-    optional: true
-
   '@ai-sdk/gateway@4.0.61(zod@4.4.3)':
     dependencies:
       '@ai-sdk/provider': 4.0.7
@@ -4449,15 +4397,6 @@ snapshots:
       '@ai-sdk/provider-utils': 5.0.28(zod@4.4.3)
       zod: 4.4.3
 
-  '@ai-sdk/provider-utils@4.0.46(zod@4.4.3)':
-    dependencies:
-      '@ai-sdk/provider': 3.0.15
-      '@standard-schema/spec': 1.1.0
-      eventsource-parser: 3.1.1
-      undici: 6.28.0
-      zod: 4.4.3
-    optional: true
-
   '@ai-sdk/provider-utils@5.0.28(zod@4.4.3)':
     dependencies:
       '@ai-sdk/provider': 4.0.7
@@ -4466,11 +4405,6 @@ snapshots:
       eventsource-parser: 3.1.1
       undici: 7.29.0
       zod: 4.4.3
-
-  '@ai-sdk/provider@3.0.15':
-    dependencies:
-      json-schema: 0.4.0
-    optional: true
 
   '@ai-sdk/provider@4.0.7':
     dependencies:
@@ -6779,15 +6713,6 @@ snapshots:
 
   agent-base@7.1.4: {}
 
-  ai@6.0.261(zod@4.4.3):
-    dependencies:
-      '@ai-sdk/gateway': 3.0.177(zod@4.4.3)
-      '@ai-sdk/provider': 3.0.15
-      '@ai-sdk/provider-utils': 4.0.46(zod@4.4.3)
-      '@opentelemetry/api': 1.9.1
-      zod: 4.4.3
-    optional: true
-
   ai@7.0.76(zod@4.4.3):
     dependencies:
       '@ai-sdk/gateway': 4.0.61(zod@4.4.3)
@@ -6951,7 +6876,6 @@ snapshots:
       '@types/pg': 8.15.6
       bun-types: 1.4.0
       postgres: 3.4.9
-    optional: true
 
   eastasianwidth@0.2.0: {}
 
@@ -7135,15 +7059,6 @@ snapshots:
     dependencies:
       node-domexception: 1.0.0
       web-streams-polyfill: 3.3.3
-
-  ff-effect@0.0.14(@effect/platform@0.94.5(effect@3.22.1))(ai@6.0.261(zod@4.4.3))(drizzle-orm@0.44.7(@electric-sql/pglite@0.3.16)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(@types/pg@8.15.6)(bun-types@1.4.0)(postgres@3.4.9))(effect@3.22.1)(inngest@3.54.2(@opentelemetry/core@2.10.0(@opentelemetry/api@1.9.1))(supports-color@7.2.0)(typescript@5.9.3)(zod@4.4.3)):
-    dependencies:
-      effect: 3.22.1
-    optionalDependencies:
-      '@effect/platform': 0.94.5(effect@3.22.1)
-      ai: 6.0.261(zod@4.4.3)
-      drizzle-orm: 0.44.7(@electric-sql/pglite@0.3.16)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(@types/pg@8.15.6)(bun-types@1.4.0)(postgres@3.4.9)
-      inngest: 3.54.2(@opentelemetry/core@2.10.0(@opentelemetry/api@1.9.1))(supports-color@7.2.0)(typescript@5.9.3)(zod@4.4.3)
 
   fill-range@7.1.1:
     dependencies:
@@ -8051,9 +7966,6 @@ snapshots:
   undici-types@6.21.0: {}
 
   undici-types@8.3.0: {}
-
-  undici@6.28.0:
-    optional: true
 
   undici@7.29.0: {}
 
