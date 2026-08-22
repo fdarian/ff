@@ -8,11 +8,14 @@ import {
 } from 'effect';
 import type { CacheAdapter, CacheEntry } from './adapter.js';
 
-// Bundles value with resolved TTL/SWR so the SWR check at read time uses per-entry durations
+// Bundles value with resolved TTL/SWR and the time it was loaded, so the SWR check at read
+// time can compute staleness itself — v4 dropped Cache.entryStats/loadedMillis, so the
+// load timestamp now travels with the cached value instead of coming from cache metadata
 type CacheValue<Value> = {
 	readonly value: Value;
 	readonly ttlMs: number;
 	readonly swrMs: number;
+	readonly loadedAt: number;
 };
 
 export type CacheInstance<Key, Value, Error> = {
@@ -53,10 +56,6 @@ export namespace Cache {
 			// Safe without synchronization — no yield points between has() and add() (cooperative scheduling)
 			const refreshingKeys = new Set<string>();
 
-			// v4 dropped Cache.EntryStats/entryStats (no built-in loaded-time tracking), so we
-			// record each key's last load timestamp ourselves to keep the SWR-trigger check working
-			const loadedAtMs = new Map<string, number>();
-
 			// makeWith takes the lookup as its own argument in v4 — the lookup stores CacheValue
 			// so timeToLive can extract the total window (ttl + swr) from the exit result
 			const inner = yield* EffectCache.makeWith(
@@ -71,8 +70,8 @@ export namespace Cache {
 								const age = now - cached.value.storedAt;
 								const totalWindow = defaultTtlMs + defaultSwrMs;
 								if (age < totalWindow) {
-									loadedAtMs.set(JSON.stringify(key), now);
-									// Adjust remaining TTL/SWR for elapsed age so SWR triggers at correct real-world time
+									// Adjust remaining TTL/SWR for elapsed age so SWR triggers at correct real-world
+									// time, and treat "now" as the load time so the adjusted ttlMs stays consistent
 									return {
 										value: cached.value.value,
 										ttlMs: Math.max(0, defaultTtlMs - age),
@@ -80,15 +79,20 @@ export namespace Cache {
 											0,
 											defaultSwrMs - Math.max(0, age - defaultTtlMs),
 										),
+										loadedAt: now,
 									} satisfies CacheValue<Value>;
 								}
 							}
 						}
 
 						const result = yield* opts.lookup(key);
-						const cv = resolveLookupResult(result, defaultTtlMs, defaultSwrMs);
 						const now = yield* Clock.currentTimeMillis;
-						loadedAtMs.set(JSON.stringify(key), now);
+						const cv = resolveLookupResult(
+							result,
+							defaultTtlMs,
+							defaultSwrMs,
+							now,
+						);
 
 						if (adapter) {
 							yield* adapter.set(
@@ -116,26 +120,23 @@ export namespace Cache {
 					const cv = yield* EffectCache.get(inner, key);
 
 					if (cv.swrMs > 0) {
-						const keyStr = JSON.stringify(key);
-						const loadedAt = loadedAtMs.get(keyStr);
-						if (loadedAt !== undefined) {
-							const now = yield* Clock.currentTimeMillis;
-							const age = now - loadedAt;
-							if (age > cv.ttlMs) {
-								if (!refreshingKeys.has(keyStr)) {
-									refreshingKeys.add(keyStr);
-									// refresh() recomputes without invalidating, so stale value remains available during recomputation
-									yield* Effect.forkDetach(
-										EffectCache.refresh(inner, key).pipe(
-											Effect.ensuring(
-												Effect.sync(() => {
-													refreshingKeys.delete(keyStr);
-												}),
-											),
-											Effect.ignore,
+						const now = yield* Clock.currentTimeMillis;
+						const age = now - cv.loadedAt;
+						if (age > cv.ttlMs) {
+							const keyStr = JSON.stringify(key);
+							if (!refreshingKeys.has(keyStr)) {
+								refreshingKeys.add(keyStr);
+								// refresh() recomputes without invalidating, so stale value remains available during recomputation
+								yield* Effect.forkDetach(
+									EffectCache.refresh(inner, key).pipe(
+										Effect.ensuring(
+											Effect.sync(() => {
+												refreshingKeys.delete(keyStr);
+											}),
 										),
-									);
-								}
+										Effect.ignore,
+									),
+								);
 							}
 						}
 					}
@@ -178,13 +179,15 @@ function resolveLookupResult<Value>(
 	result: Cache.LookupResult<Value>,
 	defaultTtlMs: number,
 	defaultSwrMs: number,
+	loadedAt: number,
 ): CacheValue<Value> {
 	if (isCacheEntry(result)) {
 		return {
 			value: result.value,
 			ttlMs: Duration.toMillis(result.ttl),
 			swrMs: result.swr ? Duration.toMillis(result.swr) : 0,
+			loadedAt,
 		};
 	}
-	return { value: result, ttlMs: defaultTtlMs, swrMs: defaultSwrMs };
+	return { value: result, ttlMs: defaultTtlMs, swrMs: defaultSwrMs, loadedAt };
 }
