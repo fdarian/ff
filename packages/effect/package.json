@@ -19,10 +19,9 @@
 		"dev": "tsdown --watch"
 	},
 	"devDependencies": {
-		"@effect/platform": "^0.94.2",
-		"@effect/platform-bun": "^0.87.1",
-		"@effect/platform-node": "^0.104.1",
-		"@effect/vitest": "^0.27.0",
+		"@effect/platform-bun": "^4.0.0-rc.111",
+		"@effect/platform-node": "^4.0.0-rc.111",
+		"@effect/vitest": "^4.0.0-rc.111",
 		"@electric-sql/pglite": "^0.3.15",
 		"@libsql/client": "^0.17.0",
 		"@orpc/contract": "^1.11.3",
@@ -34,19 +33,14 @@
 		"tsdown": "^0.22.14",
 		"typescript": "^7.0.2",
 		"valibot": "^1.1.0",
-		"vitest": "^4.0.10"
+		"vitest": "^4.1.0"
 	},
 	"peerDependencies": {
-		"@effect/platform": "^0.93.6",
 		"ai": "^7",
-
-		"effect": "^3.19.3",
+		"effect": "^4.0.0-rc.111",
 		"inngest": "^3"
 	},
 	"peerDependenciesMeta": {
-		"@effect/platform": {
-			"optional": true
-		},
 		"ai": {
 			"optional": true
 		},

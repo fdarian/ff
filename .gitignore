@@ -2,3 +2,4 @@
 node_modules/
 **/neotest-bun-debug-xml.txt
 .turbo
+.repos/
