@@ -3,7 +3,7 @@
 	"scripts": {
 		"changeset": "changeset",
 		"ci:version": "changeset version && pnpm install --no-frozen-lockfile",
-		"ci:release": "bun run build && bun scripts/patch-exports.ts && changeset publish",
+		"ci:release": "bun scripts/prepare-package-json.ts && bun run build && bun scripts/patch-exports.ts && changeset publish",
 		"build": "turbo run build",
 		"format": "biome check --write"
 	},
