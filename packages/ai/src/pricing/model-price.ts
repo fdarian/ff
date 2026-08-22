@@ -1,6 +1,6 @@
-import { HttpClient } from '@effect/platform';
 import type * as Ai from 'ai';
 import { Effect, Schema } from 'effect';
+import { HttpClient } from 'effect/unstable/http';
 import * as toml from 'smol-toml';
 
 const PricePerMillion = Schema.Number.pipe(
@@ -42,7 +42,7 @@ class TomlParseError extends Schema.TaggedError<TomlParseError>()(
 	'ff-ai/TomlParseError',
 	{
 		input: Schema.String,
-		error: Schema.Defect,
+		error: Schema.Defect(),
 	},
 ) {}
 
@@ -86,12 +86,12 @@ const fetchModelsDevByUrl = (url: string) =>
 		const parsed = yield* Effect.try({
 			try: () => toml.parse(text),
 			catch: (error) =>
-				TomlParseError.make({
+				new TomlParseError({
 					input: text,
 					error: error,
 				}),
 		});
-		return yield* Schema.decodeUnknown(ModelsDevData)(parsed);
+		return yield* Schema.decodeUnknownEffect(ModelsDevData)(parsed);
 	});
 
 /** models.dev treats reasoning as default (no suffix), so retry without it on 404 */

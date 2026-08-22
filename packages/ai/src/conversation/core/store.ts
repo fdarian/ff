@@ -3,9 +3,7 @@ import type { StoreError } from '../../common/store.js';
 import type { ConversationMessage } from './message.js';
 import type { ThreadIdentifier } from './thread.js';
 
-export class ConversationStore extends Context.Tag(
-	'ff-ai/conversation/ConversationStore',
-)<
+export class ConversationStore extends Context.Service<
 	ConversationStore,
 	{
 		getMessages: (
@@ -17,4 +15,4 @@ export class ConversationStore extends Context.Tag(
 			},
 		) => Effect.Effect<void, StoreError>;
 	}
->() {}
+>()('ff-ai/conversation/ConversationStore') {}
