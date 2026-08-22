@@ -132,15 +132,19 @@ export const getModelUsageCost = Effect.fn(function* (params: {
 	const usage = params.usage;
 
 	const inputCost = (() => {
-		if (usage.inputTokens == null) return Usd.make(0);
+		const noCacheTokens = usage.inputTokenDetails.noCacheTokens;
 		const cacheReadTokens = usage.inputTokenDetails.cacheReadTokens;
-		if (price.cacheRead != null && cacheReadTokens != null) {
-			const freshInputTokens = usage.inputTokens - cacheReadTokens;
+		if (
+			price.cacheRead != null &&
+			noCacheTokens != null &&
+			cacheReadTokens != null
+		) {
 			return Usd.make(
 				calcCost(cacheReadTokens, price.cacheRead) +
-					calcCost(freshInputTokens, price.input),
+					calcCost(noCacheTokens, price.input),
 			);
 		}
+		if (usage.inputTokens == null) return Usd.make(0);
 		return calcCost(usage.inputTokens, price.input);
 	})();
 
