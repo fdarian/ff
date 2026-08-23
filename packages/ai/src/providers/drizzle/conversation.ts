@@ -98,8 +98,8 @@ export const ConversationStoreLayer = Layer.effect(
 			},
 		);
 
-		const saveMessages: ConversationStore['Service']['saveMessages'] = Effect.fn(
-			function* (params) {
+		const saveMessages: ConversationStore['Service']['saveMessages'] =
+			Effect.fn(function* (params) {
 				const main = Effect.gen(function* () {
 					const db = yield* StoreDrizzle;
 
@@ -153,8 +153,7 @@ export const ConversationStoreLayer = Layer.effect(
 						),
 					),
 				);
-			},
-		);
+			});
 
 		return {
 			getMessages,
