@@ -39,7 +39,7 @@
 	"peerDependencies": {
 		"@effect/platform": "^0.93.6",
 		"ai": "^7",
-		"drizzle-orm": "^0.44.7",
+
 		"effect": "^3.19.3",
 		"inngest": "^3"
 	},
@@ -50,9 +50,7 @@
 		"ai": {
 			"optional": true
 		},
-		"drizzle-orm": {
-			"optional": true
-		},
+
 		"inngest": {
 			"optional": true
 		}
