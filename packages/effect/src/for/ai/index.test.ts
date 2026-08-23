@@ -322,7 +322,7 @@ describe('tool', () => {
 // These are compile-time-only checks: a tsc-only regression (like OUTPUT
 // silently falling back to its default, or a swapped generic position) never
 // throws at runtime, so it can't be caught by `expect()` assertions above —
-// `check:tsc` is what would fail if any of these mismatched.
+// `check:type` is what would fail if any of these mismatched.
 describe('type-level regressions', () => {
 	const TestSchema = Schema.Struct({ foo: Schema.String });
 

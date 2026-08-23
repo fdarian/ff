@@ -11,7 +11,7 @@
 	],
 	"scripts": {
 		"build": "tsdown",
-		"check:tsc": "tsc --noEmit",
+		"check:type": "tsc --noEmit",
 		"check:lint": "biome check",
 		"dev": "tsdown --watch"
 	},

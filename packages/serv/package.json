@@ -19,7 +19,7 @@
 	"scripts": {
 		"build": "tsdown && bun run build:cli",
 		"build:cli": "bun build src/cli/index.ts --production --target=bun --outfile dist/cli.js",
-		"check:tsc": "tsc --noEmit",
+		"check:type": "tsc --noEmit",
 		"check:lint": "biome check",
 		"test": "bun -b vitest run",
 		"dev": "tsdown --watch"
