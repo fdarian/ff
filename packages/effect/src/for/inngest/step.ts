@@ -28,7 +28,8 @@ export function wrapStep<TStep>(step: TStep) {
 
 		sleep: (id: string, duration: Duration.Input) =>
 			Effect.tryPromise({
-				try: () => s.sleep(id, Duration.toMillis(Duration.fromInputUnsafe(duration))),
+				try: () =>
+					s.sleep(id, Duration.toMillis(Duration.fromInputUnsafe(duration))),
 				catch: (cause) =>
 					new InngestError({
 						message: `Step sleep "${id}" failed`,
