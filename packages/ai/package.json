@@ -11,7 +11,7 @@
 	],
 	"scripts": {
 		"build": "tsdown",
-		"check:tsc": "tsgo --noEmit",
+		"check:tsc": "tsc --noEmit",
 		"check:lint": "biome check",
 		"dev": "tsdown --watch"
 	},
@@ -20,11 +20,10 @@
 		"@ai-sdk/valibot": "^3.0.28",
 		"@total-typescript/tsconfig": "^1.0.4",
 		"@types/bun": "^1.3.2",
-		"@typescript/native-preview": "^7.0.0-dev.20260120.1",
 		"ai": "^7.0.76",
 		"msw": "^2.12.1",
 		"tsdown": "^0.22.14",
-		"typescript": "^5.9.3"
+		"typescript": "^7.0.2"
 	},
 	"dependencies": {
 		"smol-toml": "^1.3.1",
