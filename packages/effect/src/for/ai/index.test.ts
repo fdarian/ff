@@ -334,7 +334,7 @@ describe('type-level regressions', () => {
 			prompt: 'hi',
 			output: Ai.Output.object({ schema: effectSchema(TestSchema) }),
 		});
-		type Output = Effect.Effect.Success<typeof program>['output'];
+		type Output = Effect.Success<typeof program>['output'];
 		expectTypeOf<Output>().toEqualTypeOf<{ readonly foo: string }>();
 	});
 
@@ -344,17 +344,17 @@ describe('type-level regressions', () => {
 			prompt: 'hi',
 			output: Ai.Output.object({ schema: effectSchema(TestSchema) }),
 		});
-		type StreamResult = Effect.Effect.Success<typeof program>;
+		type StreamResult = Effect.Success<typeof program>;
 		expectTypeOf<StreamResult['output']>().toEqualTypeOf<
 			PromiseLike<{ readonly foo: string }>
 		>();
 	});
 
 	test('tool<INPUT, OUTPUT, R> binds R to Effect requirements, not CONTEXT (0.0.14 call shape)', () => {
-		class CommandExecutor extends Effect.Service<CommandExecutor>()(
-			'CommandExecutor',
-			{ succeed: { run: (cmd: string) => cmd } },
-		) {}
+		class CommandExecutor extends Context.Service<
+			CommandExecutor,
+			{ run: (cmd: string) => string }
+		>()('CommandExecutor') {}
 
 		const program = tool<{ command: string }, string, CommandExecutor>({
 			description: 'runs a command',
@@ -365,7 +365,7 @@ describe('type-level regressions', () => {
 					return executor.run(input.command);
 				}),
 		});
-		expectTypeOf<Effect.Effect.Context<typeof program>>().toEqualTypeOf<
+		expectTypeOf<Effect.Services<typeof program>>().toEqualTypeOf<
 			CommandExecutor | Scope.Scope
 		>();
 	});
@@ -377,7 +377,7 @@ describe('type-level regressions', () => {
 			contextSchema: {} as Ai.FlexibleSchema<{ userId: string }>,
 			execute: (_input, options) => Effect.succeed(options.context.userId),
 		});
-		type ToolType = Effect.Effect.Success<typeof program>;
+		type ToolType = Effect.Success<typeof program>;
 		expectTypeOf<ToolType>().toEqualTypeOf<
 			Ai.Tool<{ x: number }, string, { userId: string }>
 		>();
