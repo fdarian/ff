@@ -17,12 +17,12 @@
 		"src"
 	],
 	"scripts": {
-		"build": "tsup && bun run build:cli",
+		"build": "tsdown && bun run build:cli",
 		"build:cli": "bun build src/cli/index.ts --production --target=bun --outfile dist/cli.js",
 		"check:tsc": "tsgo --noEmit",
 		"check:lint": "biome check",
 		"test": "bun -b vitest run",
-		"dev": "tsup --watch"
+		"dev": "tsdown --watch"
 	},
 	"devDependencies": {
 		"@effect/cli": "^0.71.0",
@@ -36,7 +36,7 @@
 		"ff-effect": "workspace:^",
 		"inquirer": "^12.10.0",
 		"postgres": "^3.4.7",
-		"tsup": "^8.5.0",
+		"tsdown": "^0.22.14",
 		"typescript": "^5.9.3",
 		"vitest": "^4.0.16"
 	},

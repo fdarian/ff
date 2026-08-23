@@ -1,4 +1,4 @@
-import { defineConfig } from 'tsup';
+import { defineConfig } from 'tsdown';
 
 export default defineConfig({
 	entry: ['src/index.ts', 'src/for/**/index.ts'],
@@ -7,5 +7,7 @@ export default defineConfig({
 	splitting: false,
 	sourcemap: true,
 	clean: true,
+	outDir: 'dist',
+	fixedExtension: false,
 	external: ['effect', '@effect/platform', 'ai', 'inngest', 'inngest/bun'],
 });

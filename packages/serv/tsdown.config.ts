@@ -1,4 +1,4 @@
-import { defineConfig } from 'tsup';
+import { defineConfig } from 'tsdown';
 
 export default defineConfig({
 	entry: [
@@ -13,6 +13,8 @@ export default defineConfig({
 	splitting: false,
 	sourcemap: true,
 	clean: true,
+	outDir: 'dist',
+	fixedExtension: false,
 	external: [
 		'effect',
 		'@effect/opentelemetry',

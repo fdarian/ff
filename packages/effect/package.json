@@ -11,12 +11,12 @@
 		"src"
 	],
 	"scripts": {
-		"build": "tsup",
+		"build": "tsdown",
 		"check:tsc": "tsgo --noEmit",
 		"check:lint": "biome check",
 		"test": "bun -b vitest run --project unit",
 		"test:e2e": "bun -b vitest run --project e2e",
-		"dev": "tsup --watch"
+		"dev": "tsdown --watch"
 	},
 	"devDependencies": {
 		"@effect/platform": "^0.94.2",
@@ -32,7 +32,7 @@
 		"@typescript/native-preview": "^7.0.0-dev.20260122.4",
 		"ai": "^7.0.76",
 		"inngest": "^3.52.3",
-		"tsup": "^8.5.0",
+		"tsdown": "^0.22.14",
 		"typescript": "^5.9.3",
 		"valibot": "^1.1.0",
 		"vitest": "^4.0.10"
