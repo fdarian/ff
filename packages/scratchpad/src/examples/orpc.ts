@@ -7,7 +7,7 @@ console.log(
 		Effect.runSync(
 			createHandler(
 				os.input(
-					Schema.standardSchemaV1(Schema.Struct({ name: Schema.String })),
+					Schema.toStandardSchemaV1(Schema.Struct({ name: Schema.String })),
 				),
 				Effect.fn(function* ({ input }) {
 					return yield* Effect.succeed(`Hello ${input.name}`);
@@ -40,7 +40,7 @@ console.log(
 				os
 					.$context<Context>()
 					.input(
-						Schema.standardSchemaV1(Schema.Struct({ name: Schema.String })),
+						Schema.toStandardSchemaV1(Schema.Struct({ name: Schema.String })),
 					),
 				Effect.fn(function* ({ input }) {
 					return yield* Effect.succeed(`Hello ${input.name}`);

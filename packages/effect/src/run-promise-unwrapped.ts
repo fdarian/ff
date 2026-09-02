@@ -1,4 +1,4 @@
-import { Cause, Effect, Exit } from 'effect';
+import { Cause, Effect, Exit, Option } from 'effect';
 
 /**
  * A simple wrapper around Effect.runPromiseExit that throws the error if it's a failure
@@ -10,7 +10,7 @@ export async function runPromiseUnwrapped<A, E>(
 	return Exit.match(exit, {
 		onSuccess: (value) => value,
 		onFailure: (cause) => {
-			throw Cause.isFailType(cause) ? cause.error : cause;
+			throw Option.getOrElse(Cause.findErrorOption(cause), () => cause);
 		},
 	});
 }

@@ -1,6 +1,6 @@
-import * as cli from '@effect/cli';
-import * as platform from '@effect/platform';
-import { type Cause, Effect, Option } from 'effect';
+import { type Cause, Effect, FileSystem, Option, Path } from 'effect';
+import { Argument, Command, Flag } from 'effect/unstable/cli';
+import { ChildProcess, ChildProcessSpawner } from 'effect/unstable/process';
 import inquirer from 'inquirer';
 import postgres from 'postgres';
 import { loadConfig } from '../../config/index.js';
@@ -180,15 +180,17 @@ const truncateAllTables = (
 const restoreFromFile = (databaseUrl: string, filePath: string) =>
 	Effect.gen(function* () {
 		yield* Effect.log('Restoring from file');
-		yield* platform.Command.make('psql', databaseUrl, '-f', filePath).pipe(
-			platform.Command.stdout('inherit'),
-			platform.Command.exitCode,
+		const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
+		yield* spawner.exitCode(
+			ChildProcess.make('psql', [databaseUrl, '-f', filePath], {
+				stdout: 'inherit',
+			}),
 		);
 	});
 
 const createDumpFile = Effect.gen(function* () {
-	const fs = yield* platform.FileSystem.FileSystem;
-	const path = yield* platform.Path.Path;
+	const fs = yield* FileSystem.FileSystem;
+	const path = yield* Path.Path;
 	const tmpDir = yield* fs.makeTempDirectory();
 	const file = path.join(tmpDir, 'dump.sql');
 	yield* Effect.log(`Prepared dump file: ${file}`);
@@ -197,7 +199,7 @@ const createDumpFile = Effect.gen(function* () {
 
 const saveDumpToPath = (sourcePath: string, destinationPath: string) =>
 	Effect.gen(function* () {
-		const fs = yield* platform.FileSystem.FileSystem;
+		const fs = yield* FileSystem.FileSystem;
 		yield* fs.copy(sourcePath, destinationPath);
 		yield* Effect.log(`Dump saved to: ${destinationPath}`);
 	});
@@ -210,8 +212,8 @@ interface DumpState {
 const executeWithRetry = <A, E, R>(
 	operation: Effect.Effect<A, E, R>,
 	dumpState: DumpState,
-): Effect.Effect<A, E | Cause.UnknownException, R> =>
-	Effect.catchAll(operation, (error) =>
+): Effect.Effect<A, E | Cause.UnknownError, R> =>
+	Effect.catch(operation, (error) =>
 		Effect.gen(function* () {
 			yield* Effect.logError(`Operation failed: ${error}`);
 
@@ -231,15 +233,15 @@ const executeWithRetry = <A, E, R>(
 		}),
 	);
 
-export const pullCommand = cli.Command.make(
+export const pullCommand = Command.make(
 	'pull',
 	{
-		fromDump: cli.Options.file('fromDump').pipe(cli.Options.optional),
-		targetDatabaseUrl: cli.Args.text({ name: 'targetDatabaseUrl' }).pipe(
-			cli.Args.optional,
+		fromDump: Flag.file('fromDump').pipe(Flag.optional),
+		targetDatabaseUrl: Argument.string('targetDatabaseUrl').pipe(
+			Argument.optional,
 		),
-		saveDump: cli.Options.file('saveDump').pipe(cli.Options.optional),
-		config: cli.Options.file('config').pipe(cli.Options.optional),
+		saveDump: Flag.file('saveDump').pipe(Flag.optional),
+		config: Flag.file('config').pipe(Flag.optional),
 	},
 	({ fromDump, targetDatabaseUrl, saveDump, config }) =>
 		Effect.gen(function* () {
@@ -250,7 +252,7 @@ export const pullCommand = cli.Command.make(
 			const targetUrl =
 				Option.getOrUndefined(targetDatabaseUrl) ||
 				Option.flatMap(loadedConfig, (c) =>
-					Option.fromNullable(c.pullDatabase?.targetDatabaseUrl),
+					Option.fromNullishOr(c.pullDatabase?.targetDatabaseUrl),
 				).pipe(Option.getOrUndefined) ||
 				(yield* promptTargetUrl(DEFAULT_TARGET_DATABASE_URL));
 
@@ -271,7 +273,7 @@ export const pullCommand = cli.Command.make(
 
 				const source = yield* resolveDatabaseSource(
 					Option.flatMap(loadedConfig, (c) =>
-						Option.fromNullable(c.pullDatabase?.source),
+						Option.fromNullishOr(c.pullDatabase?.source),
 					).pipe(Option.getOrUndefined),
 				);
 
@@ -315,7 +317,7 @@ export const pullCommand = cli.Command.make(
 			if (!Option.isSome(fromDump)) {
 				const shouldCleanup = yield* promptCleanupDump(dumpState.filePath);
 				if (shouldCleanup) {
-					const fs = yield* platform.FileSystem.FileSystem;
+					const fs = yield* FileSystem.FileSystem;
 					yield* fs.remove(dumpState.filePath, { recursive: true });
 					yield* Effect.log('Dump file cleaned up');
 				} else {

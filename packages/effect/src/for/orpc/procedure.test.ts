@@ -1,17 +1,19 @@
 import { layer } from '@effect/vitest';
 import { call, implement, os } from '@orpc/server';
-import { Effect } from 'effect';
+import { Context, Effect, Layer } from 'effect';
 import * as v from 'valibot';
 import { expect, expectTypeOf, test } from 'vitest';
 import { createHandler, FfOrpcCtx } from './procedure.js';
 
-class Deps extends Effect.Service<Deps>()('deps', {
-	effect: Effect.gen(function* () {
+class Deps extends Context.Service<Deps>()('deps', {
+	make: Effect.gen(function* () {
 		return yield* Effect.succeed({
 			value: 'world',
 		});
 	}),
-}) {}
+}) {
+	static readonly layer = Layer.effect(this, this.make);
+}
 
 test('FfOrpcCtx.is', () => {
 	const validCtx = {
@@ -26,7 +28,7 @@ test('FfOrpcCtx.is', () => {
 	expect(FfOrpcCtx.is({ _tag: 'other' })).toBe(false);
 });
 
-layer(Deps.Default)((it) => {
+layer(Deps.layer)((it) => {
 	it(
 		'basic',
 		Effect.fn(function* () {

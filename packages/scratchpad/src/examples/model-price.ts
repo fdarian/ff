@@ -1,6 +1,6 @@
 import { xai } from '@ai-sdk/xai';
-import { FetchHttpClient } from '@effect/platform';
-import { Effect, Logger, LogLevel } from 'effect';
+import { Effect, References } from 'effect';
+import { FetchHttpClient } from 'effect/unstable/http';
 import { getModelUsageCost } from 'ff-ai';
 import { runTester } from '../utils/run-tester';
 
@@ -46,5 +46,5 @@ runTester({
 				},
 			}),
 		);
-	}).pipe(Logger.withMinimumLogLevel(LogLevel.Debug)),
+	}).pipe(Effect.provideService(References.MinimumLogLevel, 'Debug')),
 });

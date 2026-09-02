@@ -1,7 +1,7 @@
-import { HttpApp } from '@effect/platform';
 import { type Cron, Data, Effect, FiberSet, Layer } from 'effect';
 import * as Context from 'effect/Context';
 import * as Inspectable from 'effect/Inspectable';
+import { HttpEffect } from 'effect/unstable/http';
 import type {
 	GetEvents,
 	GetFunctionInput,
@@ -12,7 +12,7 @@ import { serve } from 'inngest/bun';
 import { cronToString } from './cron';
 import { wrapStep } from './step';
 
-export const TagTypeId = Context.TagTypeId;
+export const TagTypeId = Context.ServiceTypeId;
 export const NodeInspectSymbol = Inspectable.NodeInspectSymbol;
 
 export class InngestError extends Data.TaggedError('ff-effect/InngestError')<{
@@ -89,7 +89,7 @@ export function createInngest<
 	const tagId = (opts?.tagId ?? defaultPrefix) as T;
 
 	type Tag = typeof tagId;
-	const Tag = Context.Tag(tagId)<Tag, TClient>();
+	const Tag = Context.Service<Tag, TClient>()(tagId);
 
 	const send = (
 		payload: Parameters<TClient['send']>[0],
@@ -173,7 +173,7 @@ export function createInngest<
 	const httpHandler = (httpOpts: ServeOpts) =>
 		Effect.gen(function* () {
 			const c = yield* Tag;
-			return HttpApp.fromWebHandler(buildServe(c, httpOpts));
+			return HttpEffect.fromWebHandler(buildServe(c, httpOpts));
 		});
 
 	return {

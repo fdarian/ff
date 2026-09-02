@@ -8,11 +8,14 @@ import {
 } from 'effect';
 import type { CacheAdapter, CacheEntry } from './adapter.js';
 
-// Bundles value with resolved TTL/SWR so the SWR check at read time uses per-entry durations
+// Bundles value with resolved TTL/SWR and the time it was loaded, so the SWR check at read
+// time can compute staleness itself — v4 dropped Cache.entryStats/loadedMillis, so the
+// load timestamp now travels with the cached value instead of coming from cache metadata
 type CacheValue<Value> = {
 	readonly value: Value;
 	readonly ttlMs: number;
 	readonly swrMs: number;
+	readonly loadedAt: number;
 };
 
 export type CacheInstance<Key, Value, Error> = {
@@ -25,13 +28,13 @@ export namespace Cache {
 	export type Entry<Value> = {
 		readonly _tag: 'CacheEntry';
 		readonly value: Value;
-		readonly ttl: Duration.DurationInput;
-		readonly swr?: Duration.DurationInput;
+		readonly ttl: Duration.Input;
+		readonly swr?: Duration.Input;
 	};
 
 	export function entry<Value>(
 		value: Value,
-		opts: { ttl: Duration.DurationInput; swr?: Duration.DurationInput },
+		opts: { ttl: Duration.Input; swr?: Duration.Input },
 	): Entry<Value> {
 		return { _tag: 'CacheEntry', value, ttl: opts.ttl, swr: opts.swr };
 	}
@@ -39,27 +42,24 @@ export namespace Cache {
 	export type LookupResult<Value> = Value | Entry<Value>;
 
 	export function make<Key, Value, Error = never, R = never>(opts: {
-		ttl: Duration.DurationInput;
-		swr?: Duration.DurationInput;
+		ttl: Duration.Input;
+		swr?: Duration.Input;
 		lookup: (key: Key) => Effect.Effect<LookupResult<Value>, Error, R>;
 		adapter?: CacheAdapter<Key, Value>;
 	}): Effect.Effect<CacheInstance<Key, Value, Error>, never, R> {
 		return Effect.gen(function* () {
 			const adapter = opts.adapter;
-			const defaultTtlMs = Duration.toMillis(Duration.decode(opts.ttl));
-			const defaultSwrMs = opts.swr
-				? Duration.toMillis(Duration.decode(opts.swr))
-				: 0;
+			const defaultTtlMs = Duration.toMillis(opts.ttl);
+			const defaultSwrMs = opts.swr ? Duration.toMillis(opts.swr) : 0;
 			const capacity = adapter?.capacity ?? Number.MAX_SAFE_INTEGER;
 
 			// Safe without synchronization — no yield points between has() and add() (cooperative scheduling)
 			const refreshingKeys = new Set<string>();
 
-			// makeWith uses `timeToLive: (exit) => Duration` — the lookup stores CacheValue
+			// makeWith takes the lookup as its own argument in v4 — the lookup stores CacheValue
 			// so timeToLive can extract the total window (ttl + swr) from the exit result
-			const inner = yield* EffectCache.makeWith({
-				capacity,
-				lookup: (key: Key) =>
+			const inner = yield* EffectCache.makeWith(
+				(key: Key) =>
 					Effect.gen(function* () {
 						const isRefreshing = refreshingKeys.has(JSON.stringify(key));
 
@@ -70,7 +70,8 @@ export namespace Cache {
 								const age = now - cached.value.storedAt;
 								const totalWindow = defaultTtlMs + defaultSwrMs;
 								if (age < totalWindow) {
-									// Adjust remaining TTL/SWR for elapsed age so SWR triggers at correct real-world time
+									// Adjust remaining TTL/SWR for elapsed age so SWR triggers at correct real-world
+									// time, and treat "now" as the load time so the adjusted ttlMs stays consistent
 									return {
 										value: cached.value.value,
 										ttlMs: Math.max(0, defaultTtlMs - age),
@@ -78,16 +79,22 @@ export namespace Cache {
 											0,
 											defaultSwrMs - Math.max(0, age - defaultTtlMs),
 										),
+										loadedAt: now,
 									} satisfies CacheValue<Value>;
 								}
 							}
 						}
 
 						const result = yield* opts.lookup(key);
-						const cv = resolveLookupResult(result, defaultTtlMs, defaultSwrMs);
+						const now = yield* Clock.currentTimeMillis;
+						const cv = resolveLookupResult(
+							result,
+							defaultTtlMs,
+							defaultSwrMs,
+							now,
+						);
 
 						if (adapter) {
-							const now = yield* Clock.currentTimeMillis;
 							yield* adapter.set(
 								key,
 								{ value: cv.value, storedAt: now } satisfies CacheEntry<Value>,
@@ -97,39 +104,39 @@ export namespace Cache {
 
 						return cv;
 					}),
-				timeToLive: (exit) => {
-					if (Exit.isSuccess(exit)) {
-						return Duration.millis(exit.value.ttlMs + exit.value.swrMs);
-					}
-					return Duration.zero;
+				{
+					capacity,
+					timeToLive: (exit) => {
+						if (Exit.isSuccess(exit)) {
+							return Duration.millis(exit.value.ttlMs + exit.value.swrMs);
+						}
+						return Duration.zero;
+					},
 				},
-			});
+			);
 
 			const get = (key: Key) =>
 				Effect.gen(function* () {
-					const cv = yield* inner.get(key);
+					const cv = yield* EffectCache.get(inner, key);
 
 					if (cv.swrMs > 0) {
-						const stats = yield* inner.entryStats(key);
-						if (Option.isSome(stats)) {
-							const now = yield* Clock.currentTimeMillis;
-							const age = now - stats.value.loadedMillis;
-							if (age > cv.ttlMs) {
-								const keyStr = JSON.stringify(key);
-								if (!refreshingKeys.has(keyStr)) {
-									refreshingKeys.add(keyStr);
-									// refresh() recomputes without invalidating, so stale value remains available during recomputation
-									yield* Effect.forkDaemon(
-										inner.refresh(key).pipe(
-											Effect.ensuring(
-												Effect.sync(() => {
-													refreshingKeys.delete(keyStr);
-												}),
-											),
-											Effect.ignore,
+						const now = yield* Clock.currentTimeMillis;
+						const age = now - cv.loadedAt;
+						if (age > cv.ttlMs) {
+							const keyStr = JSON.stringify(key);
+							if (!refreshingKeys.has(keyStr)) {
+								refreshingKeys.add(keyStr);
+								// refresh() recomputes without invalidating, so stale value remains available during recomputation
+								yield* Effect.forkDetach(
+									EffectCache.refresh(inner, key).pipe(
+										Effect.ensuring(
+											Effect.sync(() => {
+												refreshingKeys.delete(keyStr);
+											}),
 										),
-									);
-								}
+										Effect.ignore,
+									),
+								);
 							}
 						}
 					}
@@ -139,12 +146,12 @@ export namespace Cache {
 
 			const invalidate = (key: Key) =>
 				Effect.gen(function* () {
-					yield* inner.invalidate(key);
+					yield* EffectCache.invalidate(inner, key);
 					if (adapter) yield* adapter.remove(key);
 				});
 
 			const invalidateAll = Effect.gen(function* () {
-				yield* inner.invalidateAll;
+				yield* EffectCache.invalidateAll(inner);
 				if (adapter) yield* adapter.removeAll;
 			});
 
@@ -172,13 +179,15 @@ function resolveLookupResult<Value>(
 	result: Cache.LookupResult<Value>,
 	defaultTtlMs: number,
 	defaultSwrMs: number,
+	loadedAt: number,
 ): CacheValue<Value> {
 	if (isCacheEntry(result)) {
 		return {
 			value: result.value,
-			ttlMs: Duration.toMillis(Duration.decode(result.ttl)),
-			swrMs: result.swr ? Duration.toMillis(Duration.decode(result.swr)) : 0,
+			ttlMs: Duration.toMillis(result.ttl),
+			swrMs: result.swr ? Duration.toMillis(result.swr) : 0,
+			loadedAt,
 		};
 	}
-	return { value: result, ttlMs: defaultTtlMs, swrMs: defaultSwrMs };
+	return { value: result, ttlMs: defaultTtlMs, swrMs: defaultSwrMs, loadedAt };
 }

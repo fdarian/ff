@@ -1,6 +1,6 @@
-import { FetchHttpClient, HttpClient } from '@effect/platform';
 import { it } from '@effect/vitest';
 import { Effect, Schedule } from 'effect';
+import { FetchHttpClient, HttpClient } from 'effect/unstable/http';
 import { Inngest as InngestSdk } from 'inngest';
 import { describe, expect } from 'vitest';
 import { createInngest } from '../src/for/inngest';
@@ -25,7 +25,7 @@ describe.skipIf(!devServerRunning)('inngest integration', () => {
 	const client = new InngestSdk({ id: 'integration-test', isDev: true });
 	const Inngest = createInngest(Effect.succeed(client));
 
-	it.scopedLive('function executes via inngest dev server', () =>
+	it.live('function executes via inngest dev server', () =>
 		Effect.gen(function* () {
 			const executionLog: string[] = [];
 
@@ -66,7 +66,7 @@ describe.skipIf(!devServerRunning)('inngest integration', () => {
 		),
 	);
 
-	it.scopedLive('step tools work correctly', () =>
+	it.live('step tools work correctly', () =>
 		Effect.gen(function* () {
 			const executionLog: string[] = [];
 

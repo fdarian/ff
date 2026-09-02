@@ -24,7 +24,7 @@ export function createCaller<U>(client: U) {
 		});
 }
 
-export class StoreDrizzle extends Context.Tag('ff-ai/drizzle/store')<
+export class StoreDrizzle extends Context.Service<
 	StoreDrizzle,
 	{
 		call: <T>(
@@ -33,7 +33,7 @@ export class StoreDrizzle extends Context.Tag('ff-ai/drizzle/store')<
 			) => Promise<T>,
 		) => Effect.Effect<T, StoreError>;
 	}
->() {
+>()('ff-ai/drizzle/store') {
 	static createLayer = (conn: postgres.Sql, opts?: Opts) =>
 		Layer.succeed(StoreDrizzle, {
 			call: createCaller(createClient(conn, opts)),

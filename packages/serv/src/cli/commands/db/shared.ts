@@ -1,6 +1,6 @@
-import * as platform from '@effect/platform';
 import cliProgress from 'cli-progress';
-import { Effect, Fiber } from 'effect';
+import { Effect, Fiber, FileSystem } from 'effect';
+import { ChildProcess } from 'effect/unstable/process';
 import type { DatabaseSourceConfig } from '../../config/schema.js';
 import {
 	createDirectSource,
@@ -21,7 +21,7 @@ export const getDatabaseUrlFromSource = (source: DatabaseSource) =>
 
 export const dumpToFile = (databaseUrl: string, filePath: string) =>
 	Effect.gen(function* () {
-		const fs = yield* platform.FileSystem.FileSystem;
+		const fs = yield* FileSystem.FileSystem;
 
 		const bar = new cliProgress.SingleBar({
 			format: 'Dumping |{bar}| {fileSize} MB ({rate} MB/s)',
@@ -30,12 +30,11 @@ export const dumpToFile = (databaseUrl: string, filePath: string) =>
 			hideCursor: true,
 		});
 
-		const process = yield* platform.Command.make(
-			'pg_dump',
+		const process = yield* ChildProcess.make('pg_dump', [
 			databaseUrl,
 			'--file',
 			filePath,
-		).pipe(platform.Command.start);
+		]);
 
 		bar.start(100, 0, { fileSize: '0', rate: '0' });
 
@@ -49,7 +48,7 @@ export const dumpToFile = (databaseUrl: string, filePath: string) =>
 
 				const stat = yield* fs
 					.stat(filePath)
-					.pipe(Effect.catchAll(() => Effect.succeed({ size: 0n })));
+					.pipe(Effect.catch(() => Effect.succeed({ size: 0n })));
 				const now = Date.now();
 				const elapsed = (now - startTime) / 1000;
 				const sizeBytes = Number(stat.size);
@@ -74,7 +73,7 @@ export const dumpToFile = (databaseUrl: string, filePath: string) =>
 			}
 		});
 
-		const monitorFiber = yield* Effect.fork(fileSizeMonitor);
+		const monitorFiber = yield* Effect.forkChild(fileSizeMonitor);
 		yield* process.exitCode;
 		yield* Fiber.interrupt(monitorFiber);
 
@@ -86,7 +85,7 @@ export const resolveDatabaseSource = (
 	sourceConfig?: DatabaseSourceConfig,
 ): Effect.Effect<
 	DatabaseSource,
-	Effect.Effect.Error<typeof promptDatabaseSourceType>
+	Effect.Error<typeof promptDatabaseSourceType>
 > =>
 	Effect.gen(function* () {
 		if (sourceConfig) {

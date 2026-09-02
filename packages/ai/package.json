@@ -32,12 +32,11 @@
 		"uuid": "^13.0.0"
 	},
 	"peerDependencies": {
-		"@effect/platform": "^0.93.6",
 		"@ai-sdk/provider": "^4",
 		"@ai-sdk/valibot": "^3",
 		"ai": "^7",
 		"drizzle-orm": "^0.44.7",
-		"effect": "^3.19.3",
+		"effect": "^4.0.0-rc.111",
 		"postgres": "^3.4.7",
 		"valibot": "^1.1.0"
 	},

@@ -1,6 +1,6 @@
-import { FetchHttpClient, FileSystem, HttpClient } from '@effect/platform';
 import { describe, expect, expectTypeOf, it, layer } from '@effect/vitest';
-import { Effect, Layer, type Scope } from 'effect';
+import { Context, Effect, FileSystem, Layer, type Scope } from 'effect';
+import { FetchHttpClient, HttpClient } from 'effect/unstable/http';
 import { serverTester } from './__test__/utils.ts';
 import { basicHandler } from './basic.ts';
 import { createFetchHandler, type Handler } from './fetch-handler.ts';
@@ -67,11 +67,13 @@ describe('type inferences', () => {
 	});
 });
 
-class Dummy extends Effect.Service<Dummy>()('dummy', {
-	sync: () => ({ message: 'ok-service' }),
-}) {}
+class Dummy extends Context.Service<Dummy>()('dummy', {
+	make: Effect.succeed({ message: 'ok-service' }),
+}) {
+	static readonly layer = Layer.effect(this, this.make);
+}
 
-layer(Layer.mergeAll(FetchHttpClient.layer, Dummy.Default))((it) => {
+layer(Layer.mergeAll(FetchHttpClient.layer, Dummy.layer))((it) => {
 	it.effect('e2e', () =>
 		serverTester({
 			server: ({ port }) =>

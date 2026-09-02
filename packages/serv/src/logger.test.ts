@@ -4,7 +4,8 @@ import {
 	Array as EffectArray,
 	Logger as EffectLogger,
 	Layer,
-	LogLevel,
+	type LogLevel,
+	References,
 } from 'effect';
 import { describe, expect } from 'vitest';
 import { Logger } from './logger.js';
@@ -19,20 +20,17 @@ function makeTestLogger() {
 	const entries: Array<CapturedEntry> = [];
 
 	const logger = EffectLogger.make((options) => {
-		const annotations: Record<string, unknown> = {};
-		for (const [key, value] of options.annotations) {
-			annotations[key] = value;
-		}
+		const annotations = options.fiber.getRef(References.CurrentLogAnnotations);
 		entries.push({
 			message: EffectArray.ensure(options.message).join(' '),
 			logLevel: options.logLevel,
-			annotations,
+			annotations: { ...annotations },
 		});
 	});
 
 	const layer = Layer.merge(
-		EffectLogger.replace(EffectLogger.defaultLogger, logger),
-		EffectLogger.minimumLogLevel(LogLevel.All),
+		EffectLogger.layer([logger]),
+		Layer.succeed(References.MinimumLogLevel, 'All'),
 	);
 
 	return { entries, layer };
@@ -44,7 +42,7 @@ describe('Logger.sync', () => {
 			const { entries, layer } = makeTestLogger();
 			const log = yield* Logger.sync().pipe(Effect.provide(layer));
 			log.info('hello');
-			yield* Effect.yieldNow();
+			yield* Effect.yieldNow;
 			expect(entries).toHaveLength(1);
 			expect(entries[0].message).toBe('hello');
 			expect(entries[0].annotations).toEqual({});
@@ -58,7 +56,7 @@ describe('Logger.sync', () => {
 				Effect.provide(layer),
 			);
 			log.info('started');
-			yield* Effect.yieldNow();
+			yield* Effect.yieldNow;
 			expect(entries[0].annotations).toEqual({ service: 'api' });
 		}),
 	);
@@ -69,7 +67,7 @@ describe('Logger.sync', () => {
 			const log = yield* Logger.sync().pipe(Effect.provide(layer));
 			const child = log.child({ requestId: '123' });
 			child.info('handled');
-			yield* Effect.yieldNow();
+			yield* Effect.yieldNow;
 			expect(entries[0].annotations).toEqual({ requestId: '123' });
 		}),
 	);
@@ -82,7 +80,7 @@ describe('Logger.sync', () => {
 			);
 			const child = log.child({ requestId: '123' });
 			child.info('handled');
-			yield* Effect.yieldNow();
+			yield* Effect.yieldNow;
 			expect(entries[0].annotations).toEqual({
 				service: 'api',
 				requestId: '123',
@@ -98,7 +96,7 @@ describe('Logger.sync', () => {
 			);
 			const child = log.child({ env: 'prod' });
 			child.info('test');
-			yield* Effect.yieldNow();
+			yield* Effect.yieldNow;
 			expect(entries[0].annotations).toEqual({ env: 'prod' });
 		}),
 	);
@@ -109,7 +107,7 @@ describe('Logger.sync', () => {
 			const log = yield* Logger.sync({ a: 1 }).pipe(Effect.provide(layer));
 			const grandchild = log.child({ b: 2 }).child({ c: 3 });
 			grandchild.info('deep');
-			yield* Effect.yieldNow();
+			yield* Effect.yieldNow;
 			expect(entries[0].annotations).toEqual({ a: 1, b: 2, c: 3 });
 		}),
 	);
@@ -122,7 +120,7 @@ describe('Logger.sync', () => {
 			);
 			parent.child({ requestId: '123' });
 			parent.info('still parent');
-			yield* Effect.yieldNow();
+			yield* Effect.yieldNow;
 			expect(entries[0].annotations).toEqual({ service: 'api' });
 		}),
 	);
@@ -136,12 +134,12 @@ describe('Logger.sync', () => {
 			child.debug('d');
 			child.warn('w');
 			child.error('e');
-			yield* Effect.yieldNow();
+			yield* Effect.yieldNow;
 			expect(entries).toHaveLength(4);
-			expect(entries[0].logLevel).toBe(LogLevel.Info);
-			expect(entries[1].logLevel).toBe(LogLevel.Debug);
-			expect(entries[2].logLevel).toBe(LogLevel.Warning);
-			expect(entries[3].logLevel).toBe(LogLevel.Error);
+			expect(entries[0].logLevel).toBe('Info');
+			expect(entries[1].logLevel).toBe('Debug');
+			expect(entries[2].logLevel).toBe('Warn');
+			expect(entries[3].logLevel).toBe('Error');
 			for (const entry of entries) {
 				expect(entry.annotations).toEqual({ ctx: 'test' });
 			}
@@ -156,7 +154,7 @@ describe('Logger.sync', () => {
 			);
 			const child = log.child({ requestId: '123' });
 			child.info({ extra: 'val' }, 'with attrs');
-			yield* Effect.yieldNow();
+			yield* Effect.yieldNow;
 			expect(entries[0].message).toBe('with attrs');
 			expect(entries[0].annotations).toEqual({
 				service: 'api',

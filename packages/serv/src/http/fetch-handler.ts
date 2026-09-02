@@ -76,7 +76,7 @@ export const createFetchHandler = <
 								return { matched: false, response: undefined } as const;
 							}),
 						),
-						Effect.catchAllCause((error) =>
+						Effect.catchCause((error) =>
 							Effect.gen(function* () {
 								yield* Logger.error(
 									{ error },

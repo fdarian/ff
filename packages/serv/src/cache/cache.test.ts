@@ -1,5 +1,6 @@
 import { it } from '@effect/vitest';
-import { Clock, Duration, Effect, Option, Ref, TestClock } from 'effect';
+import { Clock, Duration, Effect, Option, Ref } from 'effect';
+import { TestClock } from 'effect/testing';
 import { describe, expect } from 'vitest';
 import type { CacheAdapter, CacheEntry } from './adapter.js';
 import { Cache } from './cache.js';
@@ -95,8 +96,8 @@ describe('Cache', () => {
 					ttl: Duration.minutes(5),
 					lookup: (_id: number) => Effect.fail('lookup-error' as const),
 				});
-				const result = yield* cache.get(1).pipe(Effect.either);
-				expect(result._tag).toBe('Left');
+				const result = yield* cache.get(1).pipe(Effect.result);
+				expect(result._tag).toBe('Failure');
 			}),
 		);
 
@@ -183,9 +184,9 @@ describe('Cache', () => {
 				// This returns stale but triggers background refresh
 				yield* cache.get(1);
 				// Let the background fiber run
-				yield* Effect.yieldNow();
+				yield* Effect.yieldNow;
 				yield* TestClock.adjust(Duration.zero);
-				yield* Effect.yieldNow();
+				yield* Effect.yieldNow;
 
 				// Background refresh should have been triggered
 				expect(yield* Ref.get(callCount)).toBe(2);
@@ -209,9 +210,9 @@ describe('Cache', () => {
 				yield* cache.get(1);
 				yield* TestClock.adjust(Duration.minutes(7));
 				yield* cache.get(1);
-				yield* Effect.yieldNow();
+				yield* Effect.yieldNow;
 				yield* TestClock.adjust(Duration.zero);
-				yield* Effect.yieldNow();
+				yield* Effect.yieldNow;
 
 				// Next get should return the refreshed value
 				const v3 = yield* cache.get(1);
@@ -420,9 +421,9 @@ describe('Cache', () => {
 
 					// Trigger SWR refresh
 					yield* cache.get(1);
-					yield* Effect.yieldNow();
+					yield* Effect.yieldNow;
 					yield* TestClock.adjust(Duration.zero);
-					yield* Effect.yieldNow();
+					yield* Effect.yieldNow;
 
 					// lookup must have been called twice (initial + refresh)
 					expect(yield* Ref.get(callCount)).toBe(2);
@@ -449,9 +450,9 @@ describe('Cache', () => {
 				yield* TestClock.adjust(Duration.minutes(7));
 
 				yield* cache.get(1);
-				yield* Effect.yieldNow();
+				yield* Effect.yieldNow;
 				yield* TestClock.adjust(Duration.zero);
-				yield* Effect.yieldNow();
+				yield* Effect.yieldNow;
 
 				const entry = store.get(JSON.stringify(1));
 				expect(entry?.value).toBe('user-1-v2');

@@ -18,15 +18,17 @@ function createMockStore() {
 	const savedMessages = new Map<string, Array<ConversationMessage.Type>>();
 
 	const mocks = {
-		getMessages: mock<ConversationStore['Type']['getMessages']>((params) =>
+		getMessages: mock<ConversationStore['Service']['getMessages']>((params) =>
 			Effect.succeed(savedMessages.get(getKey(params)) ?? []),
 		),
-		saveMessages: mock<ConversationStore['Type']['saveMessages']>((params) => {
-			const arr = savedMessages.get(getKey(params)) ?? [];
-			arr.push(...params.messages);
-			savedMessages.set(getKey(params), arr);
-			return Effect.succeed(void 0);
-		}),
+		saveMessages: mock<ConversationStore['Service']['saveMessages']>(
+			(params) => {
+				const arr = savedMessages.get(getKey(params)) ?? [];
+				arr.push(...params.messages);
+				savedMessages.set(getKey(params), arr);
+				return Effect.succeed(void 0);
+			},
+		),
 	};
 
 	return {
