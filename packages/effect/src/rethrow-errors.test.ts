@@ -105,19 +105,32 @@ test('succeeds with void when only a later error in a combined cause has a handl
 
 test('a handler is shared by same-named errors from different namespaces', () =>
 	Effect.gen(function* () {
-		const handlers = {
-			EditFailure: (error: EditFailure | OtherModuleEditFailure) =>
-				`edit failed: ${error.reason}`,
-		};
+		const scoutCause = Cause.fail(
+			new EditFailure({ reason: 'scout' }),
+		) as Cause.Cause<EditFailure | OtherModuleEditFailure>;
+		const otherCause = Cause.fail(
+			new OtherModuleEditFailure({ reason: 'other' }),
+		) as Cause.Cause<EditFailure | OtherModuleEditFailure>;
 
 		const scoutResult = yield* Effect.flip(
-			rethrowErrors(Cause.fail(new EditFailure({ reason: 'scout' })), handlers),
+			rethrowErrors(scoutCause, {
+				EditFailure: (error) => {
+					expectTypeOf(error).toEqualTypeOf<
+						EditFailure | OtherModuleEditFailure
+					>();
+					return `edit failed: ${error.reason}`;
+				},
+			}),
 		);
 		const otherResult = yield* Effect.flip(
-			rethrowErrors(
-				Cause.fail(new OtherModuleEditFailure({ reason: 'other' })),
-				handlers,
-			),
+			rethrowErrors(otherCause, {
+				EditFailure: (error) => {
+					expectTypeOf(error).toEqualTypeOf<
+						EditFailure | OtherModuleEditFailure
+					>();
+					return `edit failed: ${error.reason}`;
+				},
+			}),
 		);
 
 		expect(scoutResult).toBe('edit failed: scout');
