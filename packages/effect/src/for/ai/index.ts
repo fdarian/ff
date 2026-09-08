@@ -209,12 +209,11 @@ type ToolModelOutput = Awaited<
 >;
 
 /**
- * Same deferred-`Parameters` inference problem as {@link EffectGenerateTextDef},
- * this time for `contextSchema?: FlexibleSchema<CONTEXT>` — the bare (non-
- * NoInfer) inference site `ai` exposes for CONTEXT. `OriginalToolDef` is left
- * untouched (and used as-is for the internal cast back into `ai.tool`)
- * because flattening it there would break overload resolution across `Tool`'s
- * FunctionTool/DynamicTool/ProviderDefinedTool/ProviderExecutedTool union.
+ * Same deferred-`Parameters` inference problem as {@link EffectGenerateTextDef}
+ * for the bare (non-`NoInfer`) `contextSchema` and `outputSchema` inference
+ * sites. `OriginalToolDef` stays untouched for the cast back into `ai.tool`,
+ * because flattening it would break overload resolution across the `Tool`
+ * union.
  */
 type EffectToolDef<
 	INPUT,
@@ -229,6 +228,7 @@ type EffectToolDef<
 	| 'onInputAvailable'
 	| 'toModelOutput'
 	| 'contextSchema'
+	| 'outputSchema'
 > & {
 	execute?: (
 		input: INPUT,
@@ -249,6 +249,7 @@ type EffectToolDef<
 		output: OUTPUT;
 	}) => Effect.Effect<ToolModelOutput, never, R>;
 	contextSchema?: Ai.FlexibleSchema<CONTEXT>;
+	outputSchema?: Ai.FlexibleSchema<OUTPUT>;
 };
 
 export function tool<

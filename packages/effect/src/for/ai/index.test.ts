@@ -382,4 +382,15 @@ describe('type-level regressions', () => {
 			Ai.Tool<{ x: number }, string, { userId: string }>
 		>();
 	});
+
+	test('tool infers OUTPUT from outputSchema instead of defaulting', () => {
+		const program = tool({
+			description: 'count',
+			inputSchema: {} as Ai.FlexibleSchema<{ id: string }>,
+			outputSchema: {} as Ai.FlexibleSchema<{ count: number }>,
+		});
+		expectTypeOf<
+			Ai.InferToolOutput<Effect.Success<typeof program>>
+		>().toEqualTypeOf<{ count: number }>();
+	});
 });
