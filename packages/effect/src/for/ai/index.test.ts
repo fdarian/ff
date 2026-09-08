@@ -273,6 +273,53 @@ describe('tool', () => {
 			expect(myTool.strict).toBe(true);
 		}).pipe(Effect.scoped, Effect.runPromise));
 
+	test('adapts raw Effect schemas and preserves wrapped schemas', () =>
+		Effect.gen(function* () {
+			const wrappedInput = effectSchema(
+				Schema.Struct({ wrapped: Schema.String }),
+			);
+			const rawOutput = Schema.Struct({ count: Schema.Number });
+			const myTool = yield* tool({
+				inputSchema: Schema.Struct({ count: Schema.NumberFromString }),
+				outputSchema: rawOutput,
+			});
+
+			const inputSchema = myTool.inputSchema as {
+				validate: (value: unknown) => unknown;
+			};
+			expect(inputSchema.validate({ count: '1' })).toEqual({
+				success: true,
+				value: { count: 1 },
+			});
+			expect(inputSchema.validate({ count: 1 })).toMatchObject({
+				success: false,
+			});
+			const outputValidator = (
+				myTool.outputSchema as {
+					validate?: (value: unknown) => unknown;
+				}
+			).validate;
+			if (outputValidator === undefined)
+				throw new Error('missing output validator');
+			expect(outputValidator({ count: 1 })).toEqual({
+				success: true,
+				value: { count: 1 },
+			});
+			expect(outputValidator({ count: 'invalid' })).toMatchObject({
+				success: false,
+			});
+
+			const wrappedOutput = effectSchema(
+				Schema.Struct({ wrapped: Schema.String }),
+			);
+			const wrappedTool = yield* tool({
+				inputSchema: wrappedInput,
+				outputSchema: wrappedOutput,
+			});
+			expect(wrappedTool.inputSchema).toBe(wrappedInput);
+			expect(wrappedTool.outputSchema).toBe(wrappedOutput);
+		}).pipe(Effect.scoped, Effect.runPromise));
+
 	test('execute handler can access Effect services', () => {
 		class WeatherService extends Context.Service<WeatherService>()(
 			'WeatherService',
@@ -392,5 +439,34 @@ describe('type-level regressions', () => {
 		expectTypeOf<
 			Ai.InferToolOutput<Effect.Success<typeof program>>
 		>().toEqualTypeOf<{ count: number }>();
+	});
+
+	test('tool infers INPUT and OUTPUT from raw Effect schemas without execute', () => {
+		const program = tool({
+			inputSchema: Schema.Struct({ query: Schema.String }),
+			outputSchema: Schema.Struct({ count: Schema.Number }),
+		});
+		type ToolType = Effect.Success<typeof program>;
+		expectTypeOf<ToolType>().toEqualTypeOf<
+			Ai.Tool<
+				{ readonly query: string },
+				{ readonly count: number },
+				Record<string, unknown>
+			>
+		>();
+	});
+
+	test('tool preserves explicit OUTPUT inference without an output schema', () => {
+		const program = tool<{ readonly query: string }, string>({
+			inputSchema: Ai.jsonSchema({
+				type: 'object',
+				properties: { query: { type: 'string' } },
+				required: ['query'],
+			}),
+		});
+		type ToolType = Effect.Success<typeof program>;
+		expectTypeOf<ToolType>().toEqualTypeOf<
+			Ai.Tool<{ readonly query: string }, string, Record<string, unknown>>
+		>();
 	});
 });

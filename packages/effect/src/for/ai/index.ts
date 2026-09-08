@@ -1,7 +1,8 @@
 import * as Ai from 'ai';
-import { Data, Effect, FiberSet, type Scope } from 'effect';
+import { Data, Effect, FiberSet, Schema, type Scope } from 'effect';
+import { describe, effectSchema } from './schema';
 
-export { describe, effectSchema } from './schema';
+export { describe, effectSchema };
 
 export class AiError extends Data.TaggedError('ff-effect/AiError')<{
 	message: string;
@@ -208,6 +209,14 @@ type ToolModelOutput = Awaited<
 	ReturnType<NonNullable<Ai.Tool<unknown, unknown>['toModelOutput']>>
 >;
 
+type EffectToolSchema<T> = Ai.FlexibleSchema<T> | Schema.Codec<T, unknown>;
+
+function normalizeToolSchema<T>(schema: EffectToolSchema<T>) {
+	return Schema.isSchema(schema)
+		? effectSchema(schema as Schema.Codec<T, unknown>)
+		: schema;
+}
+
 /**
  * Same deferred-`Parameters` inference problem as {@link EffectGenerateTextDef}
  * for the bare (non-`NoInfer`) `contextSchema` and `outputSchema` inference
@@ -228,12 +237,15 @@ type EffectToolDef<
 	| 'onInputAvailable'
 	| 'toModelOutput'
 	| 'contextSchema'
+	| 'inputSchema'
 	| 'outputSchema'
 > & {
+	inputSchema: EffectToolSchema<INPUT>;
 	execute?: (
 		input: INPUT,
 		options: Ai.ToolExecutionOptions<CONTEXT>,
 	) => Effect.Effect<OUTPUT, unknown, R>;
+	outputSchema?: EffectToolSchema<OUTPUT>;
 	onInputStart?: (
 		options: Ai.ToolExecutionOptions<CONTEXT>,
 	) => Effect.Effect<void, never, R>;
@@ -249,7 +261,6 @@ type EffectToolDef<
 		output: OUTPUT;
 	}) => Effect.Effect<ToolModelOutput, never, R>;
 	contextSchema?: Ai.FlexibleSchema<CONTEXT>;
-	outputSchema?: Ai.FlexibleSchema<OUTPUT>;
 };
 
 export function tool<
@@ -265,6 +276,10 @@ export function tool<
 
 		const originalParams = {
 			...params,
+			inputSchema: normalizeToolSchema(params.inputSchema),
+			...(params.outputSchema === undefined
+				? {}
+				: { outputSchema: normalizeToolSchema(params.outputSchema) }),
 			...(params.execute && {
 				execute: (input: INPUT, options: Ai.ToolExecutionOptions<CONTEXT>) =>
 					// biome-ignore lint/style/noNonNullAssertion: guarded by truthiness check
