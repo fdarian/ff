@@ -1,5 +1,16 @@
 # ff-effect
 
+## 0.3.0
+
+### Minor Changes
+
+- 815fcdf: Add `rethrowErrors` to re-fail a `Cause` as a plain string for named tagged errors, matching on the bare tag regardless of module namespace prefix.
+
+### Patch Changes
+
+- ee67a0c: Infer tool output types from outputSchema without requiring explicit generics.
+- f1a2390: Allow `tool` input and output schemas to be supplied directly as Effect schemas while preserving existing AI SDK schema arguments.
+
 ## 0.2.0
 
 ### Minor Changes
