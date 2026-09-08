@@ -1,6 +1,7 @@
 import * as Ai from 'ai';
 import { Context, Effect, Layer, Schema, type Scope } from 'effect';
 import { describe, expect, expectTypeOf, test, vi } from 'vitest';
+import z from 'zod/v4';
 import { AiError, generateText, streamText, tool } from './index.js';
 import { effectSchema } from './schema.js';
 
@@ -231,9 +232,7 @@ describe('tool', () => {
 		Effect.gen(function* () {
 			const myTool = yield* tool({
 				description: 'test tool',
-				inputSchema: { type: 'object' } as unknown as Ai.FlexibleSchema<{
-					city: string;
-				}>,
+				inputSchema: Schema.Struct({ city: Schema.String }),
 				execute: (input) => Effect.succeed(`Weather in ${input.city}: sunny`),
 			});
 
@@ -271,6 +270,62 @@ describe('tool', () => {
 			expect(myTool.description).toBe('my tool');
 			expect(myTool.title).toBe('My Tool');
 			expect(myTool.strict).toBe(true);
+		}).pipe(Effect.scoped, Effect.runPromise));
+
+	test('adapts raw Effect schemas and preserves wrapped schemas', () =>
+		Effect.gen(function* () {
+			const wrappedInput = effectSchema(
+				Schema.Struct({ wrapped: Schema.String }),
+			);
+			const rawOutput = Schema.Struct({ count: Schema.Number });
+			const myTool = yield* tool({
+				inputSchema: Schema.Struct({ count: Schema.NumberFromString }),
+				outputSchema: rawOutput,
+			});
+
+			const inputSchema = myTool.inputSchema as {
+				validate: (value: unknown) => unknown;
+			};
+			expect(inputSchema.validate({ count: '1' })).toEqual({
+				success: true,
+				value: { count: 1 },
+			});
+			expect(inputSchema.validate({ count: 1 })).toMatchObject({
+				success: false,
+			});
+			const outputValidator = (
+				myTool.outputSchema as {
+					validate?: (value: unknown) => unknown;
+				}
+			).validate;
+			if (outputValidator === undefined)
+				throw new Error('missing output validator');
+			expect(outputValidator({ count: 1 })).toEqual({
+				success: true,
+				value: { count: 1 },
+			});
+			expect(outputValidator({ count: 'invalid' })).toMatchObject({
+				success: false,
+			});
+
+			const wrappedOutput = effectSchema(
+				Schema.Struct({ wrapped: Schema.String }),
+			);
+			const wrappedTool = yield* tool({
+				inputSchema: wrappedInput,
+				outputSchema: wrappedOutput,
+			});
+			expect(wrappedTool.inputSchema).toBe(wrappedInput);
+			expect(wrappedTool.outputSchema).toBe(wrappedOutput);
+
+			const zodInput = z.object({ label: z.string() });
+			const zodOutput = z.object({ ok: z.boolean() });
+			const zodTool = yield* tool({
+				inputSchema: zodInput,
+				outputSchema: zodOutput,
+			});
+			expect(zodTool.inputSchema).toBe(zodInput);
+			expect(zodTool.outputSchema).toBe(zodOutput);
 		}).pipe(Effect.scoped, Effect.runPromise));
 
 	test('execute handler can access Effect services', () => {
@@ -392,5 +447,60 @@ describe('type-level regressions', () => {
 		expectTypeOf<
 			Ai.InferToolOutput<Effect.Success<typeof program>>
 		>().toEqualTypeOf<{ count: number }>();
+	});
+
+	test('tool infers INPUT and OUTPUT from raw Effect schemas without execute', () => {
+		const program = tool({
+			inputSchema: Schema.Struct({ query: Schema.String }),
+			outputSchema: Schema.Struct({ count: Schema.Number }),
+		});
+		type ToolType = Effect.Success<typeof program>;
+		expectTypeOf<ToolType>().toEqualTypeOf<
+			Ai.Tool<
+				{ readonly query: string },
+				{ readonly count: number },
+				Record<string, unknown>
+			>
+		>();
+	});
+
+	test('tool preserves explicit OUTPUT inference without an output schema', () => {
+		const program = tool<{ readonly query: string }, string>({
+			inputSchema: Ai.jsonSchema({
+				type: 'object',
+				properties: { query: { type: 'string' } },
+				required: ['query'],
+			}),
+		});
+		type ToolType = Effect.Success<typeof program>;
+		expectTypeOf<ToolType>().toEqualTypeOf<
+			Ai.Tool<{ readonly query: string }, string, Record<string, unknown>>
+		>();
+	});
+
+	test('tool infers mixed raw Effect and AI schemas', () => {
+		const rawInput = tool({
+			inputSchema: Schema.Struct({ query: Schema.String }),
+			outputSchema: z.object({ count: z.number() }),
+		});
+		const zodInput = tool({
+			inputSchema: z.object({ query: z.string() }),
+			outputSchema: Schema.Struct({ count: Schema.Number }),
+		});
+
+		expectTypeOf<Effect.Success<typeof rawInput>>().toEqualTypeOf<
+			Ai.Tool<
+				{ readonly query: string },
+				{ count: number },
+				Record<string, unknown>
+			>
+		>();
+		expectTypeOf<Effect.Success<typeof zodInput>>().toEqualTypeOf<
+			Ai.Tool<
+				{ query: string },
+				{ readonly count: number },
+				Record<string, unknown>
+			>
+		>();
 	});
 });

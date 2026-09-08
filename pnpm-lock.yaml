@@ -224,6 +224,9 @@ importers:
       vitest:
         specifier: ^4.1.0
         version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.2.0)(msw@2.15.0(@types/node@26.2.0)(typescript@7.0.2))(vite@8.2.2(@types/node@26.2.0))
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
 
   packages/scratchpad:
     dependencies:
