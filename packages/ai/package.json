@@ -22,7 +22,8 @@
 		"@total-typescript/tsconfig": "^1.0.4",
 		"@types/bun": "^1.3.2",
 		"ai": "^7.0.76",
-		"drizzle-kit": "^0.31.6",
+		"drizzle-kit": "1.0.0-rc.5-5935859",
+		"drizzle-orm": "1.0.0-rc.5-5935859",
 		"effect": "^4.0.0",
 		"msw": "^2.12.1",
 		"tsdown": "^0.22.14",
@@ -36,7 +37,7 @@
 		"@ai-sdk/provider": "^4",
 		"@ai-sdk/valibot": "^3",
 		"ai": "^7",
-		"drizzle-orm": "^0.44.7",
+		"drizzle-orm": "1.0.0-rc.5-5935859",
 		"effect": "^4.0.0",
 		"postgres": "^3.4.7",
 		"valibot": "^1.1.0"

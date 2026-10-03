@@ -1,15 +1,10 @@
-import type { Casing } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import { Context, Effect, Layer } from 'effect';
 import type postgres from 'postgres';
 import { StoreError } from '../../common/store';
 
-type Opts = {
-	casing?: Casing;
-};
-
-export function createClient(conn: postgres.Sql, opts?: Opts) {
-	return drizzle(conn, { casing: opts?.casing });
+export function createClient(conn: postgres.Sql) {
+	return drizzle({ client: conn });
 }
 type Client = ReturnType<typeof createClient>;
 
@@ -34,8 +29,8 @@ export class StoreDrizzle extends Context.Service<
 		) => Effect.Effect<T, StoreError>;
 	}
 >()('ff-ai/drizzle/store') {
-	static createLayer = (conn: postgres.Sql, opts?: Opts) =>
+	static createLayer = (conn: postgres.Sql) =>
 		Layer.succeed(StoreDrizzle, {
-			call: createCaller(createClient(conn, opts)),
+			call: createCaller(createClient(conn)),
 		});
 }

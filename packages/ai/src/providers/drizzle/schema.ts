@@ -36,7 +36,7 @@ export const threads = schema.table(
 		uniqueResourcePublicId: unique().on(table.resourceId, table.publicId),
 	}),
 );
-function threadId(config?: ReferenceConfig['actions']) {
+function threadId(config?: ReferenceConfig['config']) {
 	return bigint({ mode: 'number' })
 		.$type<ThreadsPk>()
 		.references(() => threads.id, config);
