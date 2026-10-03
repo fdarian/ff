@@ -1,6 +1,6 @@
 import cliProgress from 'cli-progress';
 import { Effect, Fiber, FileSystem } from 'effect';
-import { ChildProcess } from 'effect/unstable/process';
+import { ChildProcess } from 'effect/process';
 import type { DatabaseSourceConfig } from '../../config/schema.js';
 import {
 	createDirectSource,

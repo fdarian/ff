@@ -1,6 +1,6 @@
 import { describe, expect, expectTypeOf, it, layer } from '@effect/vitest';
 import { Context, Effect, FileSystem, Layer, type Scope } from 'effect';
-import { FetchHttpClient, HttpClient } from 'effect/unstable/http';
+import { FetchHttpClient, HttpClient } from 'effect/http';
 import { serverTester } from './__test__/utils.ts';
 import { basicHandler } from './basic.ts';
 import { createFetchHandler, type Handler } from './fetch-handler.ts';

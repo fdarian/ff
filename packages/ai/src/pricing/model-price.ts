@@ -1,6 +1,6 @@
 import type * as Ai from 'ai';
 import { Effect, Schema } from 'effect';
-import { HttpClient } from 'effect/unstable/http';
+import { HttpClient } from 'effect/http';
 import * as toml from 'smol-toml';
 
 const PricePerMillion = Schema.Number.pipe(

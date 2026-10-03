@@ -1,5 +1,5 @@
 import { Effect, Option } from 'effect';
-import { Command, Flag } from 'effect/unstable/cli';
+import { Command, Flag } from 'effect/cli';
 import { loadConfig } from '../../config/index.js';
 import {
 	dumpToFile,
@@ -10,11 +10,11 @@ import {
 export const dumpCommand = Command.make(
 	'dump',
 	{
-		output: Flag.file('output').pipe(
+		output: Flag.File('output').pipe(
 			Flag.withAlias('o'),
 			Flag.withDefault('./dump.sql'),
 		),
-		config: Flag.file('config').pipe(Flag.optional),
+		config: Flag.File('config').pipe(Flag.optional),
 	},
 	({ output, config }) =>
 		Effect.gen(function* () {

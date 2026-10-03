@@ -1,6 +1,6 @@
 import { it } from '@effect/vitest';
 import { Effect, Schedule } from 'effect';
-import { FetchHttpClient, HttpClient } from 'effect/unstable/http';
+import { FetchHttpClient, HttpClient } from 'effect/http';
 import { Inngest as InngestSdk } from 'inngest';
 import { describe, expect } from 'vitest';
 import { createInngest } from '../src/for/inngest';
