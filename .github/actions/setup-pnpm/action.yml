@@ -1,5 +1,5 @@
 name: Setup PNPM
-description: Set up PNPM (bun is installed via devEngines). Requires actions/checkout to run first.
+description: Set up PNPM and Bun. Requires actions/checkout to run first.
 
 inputs:
   cache:
@@ -10,6 +10,8 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v2
     - name: Setup PNPM
       uses: pnpm/setup@v2
       with:
