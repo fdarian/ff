@@ -1,6 +1,6 @@
 import { expect, layer } from '@effect/vitest';
 import { Cause, Data, Effect, Layer, Ref } from 'effect';
-import { FetchHttpClient, HttpClient } from 'effect/unstable/http';
+import { FetchHttpClient, HttpClient } from 'effect/http';
 import { serverTester } from './__test__/utils.ts';
 import { basicHandler } from './basic.ts';
 import { createFetchHandler } from './fetch-handler.ts';

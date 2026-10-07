@@ -1,5 +1,5 @@
 import { Effect } from 'effect';
-import { Command } from 'effect/unstable/cli';
+import { Command } from 'effect/cli';
 import { dumpCommand } from './dump.js';
 import { pullCommand } from './pull.js';
 

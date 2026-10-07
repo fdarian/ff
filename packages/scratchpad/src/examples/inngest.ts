@@ -1,8 +1,8 @@
 import * as BunRuntime from '@effect/platform-bun/BunRuntime';
 import * as BunServices from '@effect/platform-bun/BunServices';
 import { Context, Effect, Layer, Scope } from 'effect';
+import { FetchHttpClient, HttpClient } from 'effect/http';
 import * as S from 'effect/Schema';
-import { FetchHttpClient, HttpClient } from 'effect/unstable/http';
 import { createInngest } from 'ff-effect/for/inngest';
 import { basicHandler, createFetchHandler, Logger } from 'ff-serv';
 import * as InngestSdk from 'inngest';

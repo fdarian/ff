@@ -1,6 +1,6 @@
 import { type Cause, Effect, FileSystem, Option, Path } from 'effect';
-import { Argument, Command, Flag } from 'effect/unstable/cli';
-import { ChildProcess, ChildProcessSpawner } from 'effect/unstable/process';
+import { Argument, Command, Flag } from 'effect/cli';
+import { ChildProcess, ChildProcessSpawner } from 'effect/process';
 import inquirer from 'inquirer';
 import postgres from 'postgres';
 import { loadConfig } from '../../config/index.js';
@@ -236,12 +236,12 @@ const executeWithRetry = <A, E, R>(
 export const pullCommand = Command.make(
 	'pull',
 	{
-		fromDump: Flag.file('fromDump').pipe(Flag.optional),
-		targetDatabaseUrl: Argument.string('targetDatabaseUrl').pipe(
+		fromDump: Flag.File('fromDump').pipe(Flag.optional),
+		targetDatabaseUrl: Argument.String('targetDatabaseUrl').pipe(
 			Argument.optional,
 		),
-		saveDump: Flag.file('saveDump').pipe(Flag.optional),
-		config: Flag.file('config').pipe(Flag.optional),
+		saveDump: Flag.File('saveDump').pipe(Flag.optional),
+		config: Flag.File('config').pipe(Flag.optional),
 	},
 	({ fromDump, targetDatabaseUrl, saveDump, config }) =>
 		Effect.gen(function* () {

@@ -1,6 +1,6 @@
 import { xai } from '@ai-sdk/xai';
 import { Effect, References } from 'effect';
-import { FetchHttpClient } from 'effect/unstable/http';
+import { FetchHttpClient } from 'effect/http';
 import { getModelUsageCost } from 'ff-ai';
 import { runTester } from '../utils/run-tester';
 

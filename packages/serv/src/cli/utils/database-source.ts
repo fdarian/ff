@@ -1,5 +1,5 @@
 import { Effect } from 'effect';
-import { ChildProcess, ChildProcessSpawner } from 'effect/unstable/process';
+import { ChildProcess, ChildProcessSpawner } from 'effect/process';
 
 export interface DatabaseSource {
 	readonly getConnectionUrl: Effect.Effect<

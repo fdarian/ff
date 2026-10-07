@@ -1,7 +1,7 @@
 import { type Cron, Data, Effect, FiberSet, Layer } from 'effect';
 import * as Context from 'effect/Context';
+import { HttpEffect } from 'effect/http';
 import * as Inspectable from 'effect/Inspectable';
-import { HttpEffect } from 'effect/unstable/http';
 import type {
 	GetEvents,
 	GetFunctionInput,
