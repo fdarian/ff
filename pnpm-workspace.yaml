@@ -3,6 +3,9 @@ packages:
   - packages/*
   - internals/*
 
+catalog:
+  tsrs: ^0.18.0-ts7.1.0-dev.20260929
+
 allowBuilds:
   '@parcel/watcher': true
   esbuild: true
