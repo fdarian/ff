@@ -1,5 +1,20 @@
 # ff-effect
 
+## 0.3.0
+
+### Minor Changes
+
+- 3a1a41e: Upgrade to stable Effect `4.0.0` (peer range updated) and Drizzle `1.0.0-rc.5`.
+
+  `ff-ai`: the Drizzle provider now builds its client with `drizzle({ client })`, and the `store.casing` option is removed because Drizzle v1 no longer supports casing at the client level.
+
+- 815fcdf: Add `rethrowErrors` to re-fail a `Cause` as a plain string for named tagged errors, matching on the bare tag regardless of module namespace prefix.
+
+### Patch Changes
+
+- ee67a0c: Infer tool output types from outputSchema without requiring explicit generics.
+- f1a2390: Allow `tool` input and output schemas to be supplied directly as Effect schemas while preserving existing AI SDK schema arguments.
+
 ## 0.2.0
 
 ### Minor Changes
