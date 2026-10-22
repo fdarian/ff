@@ -25,10 +25,11 @@ namespace ModelInput {
 	export function getProvider(model: Type): string {
 		if (typeof model === 'string') return 'vercel';
 
-		if (model.provider === 'google.generative-ai') {
-			return 'google';
-		}
-		return model.provider.replaceAll('.chat', '');
+		// AI SDK ids are `<provider>[.<api>]` (xai.responses, anthropic.messages, google.generative-ai)
+		const separator = model.provider.indexOf('.');
+		return separator === -1
+			? model.provider
+			: model.provider.slice(0, separator);
 	}
 
 	export function getModelId(model: Type): string {
@@ -37,6 +38,8 @@ namespace ModelInput {
 	}
 }
 type ModelInput = ModelInput.Type;
+
+export const getModelProvider = ModelInput.getProvider;
 
 class TomlParseError extends Schema.TaggedError<TomlParseError>()(
 	'ff-ai/TomlParseError',
@@ -71,6 +74,42 @@ class ModelsDevData extends Schema.Class<ModelsDevData>('ff-ai/ModelsDevData')({
 	}
 }
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+	typeof value === 'object' && value !== null && !Array.isArray(value);
+
+/**
+ * models.dev schema 2 nests base text rates under `cost.text`; flatten them to
+ * the legacy `cost` shape. Overrides, multipliers and other modalities are
+ * ignored. Absent rates stay absent so decoding still reports the missing key.
+ */
+const normalizeModelsDevCost = (
+	parsed: Record<string, unknown>,
+): Record<string, unknown> => {
+	const cost = parsed.cost;
+	if (!isRecord(cost) || !isRecord(cost.text)) return parsed;
+
+	const input = isRecord(cost.text.input) ? cost.text.input : undefined;
+	const output = isRecord(cost.text.output) ? cost.text.output : undefined;
+	const cache = isRecord(input?.cache) ? input.cache : undefined;
+	const write = cache?.write;
+
+	const flat = {
+		input: input?.price,
+		output: output?.price,
+		cache_read: cache?.read,
+		cache_write: isRecord(write) ? write['5m'] : write,
+	};
+	return {
+		...parsed,
+		cost: Object.fromEntries(
+			Object.entries(flat).filter((entry) => entry[1] !== undefined),
+		),
+	};
+};
+
+export const decodeModelsDevData = (parsed: Record<string, unknown>) =>
+	Schema.decodeUnknownEffect(ModelsDevData)(normalizeModelsDevCost(parsed));
+
 const modelsDevUrl = (provider: string, modelId: string) =>
 	`https://raw.githubusercontent.com/sst/models.dev/refs/heads/dev/providers/${provider}/models/${modelId}.toml`;
 
@@ -91,7 +130,7 @@ const fetchModelsDevByUrl = (url: string) =>
 					error: error,
 				}),
 		});
-		return yield* Schema.decodeUnknownEffect(ModelsDevData)(parsed);
+		return yield* decodeModelsDevData(parsed);
 	});
 
 /** models.dev treats reasoning as default (no suffix), so retry without it on 404 */
