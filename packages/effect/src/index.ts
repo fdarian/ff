@@ -1,3 +1,4 @@
+export { asyncClient, type AsyncClient } from './async-client.js';
 export { extract } from './extract.js';
 export { rethrowErrors } from './rethrow-errors.js';
 export { runPromiseUnwrapped } from './run-promise-unwrapped.js';
