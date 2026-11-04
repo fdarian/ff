@@ -1,5 +1,11 @@
 # ff-ai
 
+## 0.5.1
+
+### Patch Changes
+
+- a0c92d2: Price cache-write tokens in `calcInputCost` / `getModelUsageCost` (previously billed at $0 because AI SDK v7 excludes them from `noCacheTokens`). Cache writes use the model's `cache_write` rate, falling back to the input rate.
+
 ## 0.5.0
 
 ### Minor Changes
