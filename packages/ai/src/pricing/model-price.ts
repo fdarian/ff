@@ -152,31 +152,41 @@ const calcCost = (token: number, pricePerMillion: PricePerMillion) =>
 	Usd.make((token * pricePerMillion) / 1_000_000);
 
 /**
- * Prices input tokens, degrading gracefully as the provider's usage detail
- * gets sparser: the SDK-supplied noCacheTokens split when present, a
- * cacheReadTokens/inputTokens derivation for providers that only report a
- * cached count and a total (the v6 usage shape), and a flat rate over the
- * full total when there is no cache detail at all.
+ * Bills every input token exactly once: fresh tokens at the input rate, cache
+ * reads at the cacheRead rate and cache writes at the cacheWrite rate. A cache
+ * category with no rate falls back to the input rate rather than being
+ * dropped. Fresh tokens are the SDK-supplied noCacheTokens when present,
+ * otherwise inputTokens minus whichever cache counts the provider reported (so
+ * with no cache detail at all the full total is billed at the input rate).
  */
 export function calcInputCost(
 	usage: Ai.LanguageModelUsage,
-	price: { input: PricePerMillion; cacheRead?: PricePerMillion },
+	price: {
+		input: PricePerMillion;
+		cacheRead?: PricePerMillion;
+		cacheWrite?: PricePerMillion;
+	},
 ): Usd {
 	if (usage.inputTokens == null) return Usd.make(0);
 
-	const noCacheTokens = usage.inputTokenDetails.noCacheTokens;
 	const cacheReadTokens = usage.inputTokenDetails.cacheReadTokens;
+	const cacheWriteTokens = usage.inputTokenDetails.cacheWriteTokens;
+	const freshInputTokens =
+		usage.inputTokenDetails.noCacheTokens ??
+		usage.inputTokens - (cacheReadTokens ?? 0) - (cacheWriteTokens ?? 0);
 
-	if (price.cacheRead != null && cacheReadTokens != null) {
-		const freshInputTokens =
-			noCacheTokens ?? usage.inputTokens - cacheReadTokens;
-		return Usd.make(
-			calcCost(cacheReadTokens, price.cacheRead) +
-				calcCost(freshInputTokens, price.input),
-		);
-	}
+	const cacheReadCost =
+		cacheReadTokens == null
+			? 0
+			: calcCost(cacheReadTokens, price.cacheRead ?? price.input);
+	const cacheWriteCost =
+		cacheWriteTokens == null
+			? 0
+			: calcCost(cacheWriteTokens, price.cacheWrite ?? price.input);
 
-	return calcCost(usage.inputTokens, price.input);
+	return Usd.make(
+		calcCost(freshInputTokens, price.input) + cacheReadCost + cacheWriteCost,
+	);
 }
 
 export const getModelUsageCost = Effect.fn(function* (params: {
@@ -201,6 +211,7 @@ export const getModelUsageCost = Effect.fn(function* (params: {
 	const inputCost = calcInputCost(usage, {
 		input: price.input,
 		cacheRead: price.cacheRead,
+		cacheWrite: price.cacheWrite,
 	});
 
 	const outputCost = (() => {

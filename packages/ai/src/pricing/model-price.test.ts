@@ -13,13 +13,14 @@ function makeUsage(params: {
 	inputTokens: number | undefined;
 	noCacheTokens?: number;
 	cacheReadTokens?: number;
+	cacheWriteTokens?: number;
 }): Ai.LanguageModelUsage {
 	return {
 		inputTokens: params.inputTokens,
 		inputTokenDetails: {
 			noCacheTokens: params.noCacheTokens,
 			cacheReadTokens: params.cacheReadTokens,
-			cacheWriteTokens: undefined,
+			cacheWriteTokens: params.cacheWriteTokens,
 		},
 		outputTokens: undefined,
 		outputTokenDetails: { textTokens: undefined, reasoningTokens: undefined },
@@ -27,10 +28,12 @@ function makeUsage(params: {
 	};
 }
 
-function makePrice(input: number, cacheRead?: number) {
+function makePrice(input: number, cacheRead?: number, cacheWrite?: number) {
 	return {
 		input: input as PricePerMillion,
 		cacheRead: cacheRead == null ? undefined : (cacheRead as PricePerMillion),
+		cacheWrite:
+			cacheWrite == null ? undefined : (cacheWrite as PricePerMillion),
 	};
 }
 
@@ -84,6 +87,53 @@ describe('calcInputCost', () => {
 		);
 
 		expect(cost).toBe(0);
+	});
+
+	describe('GPT-6.1 terra rates (input 1, cache_read 0.05, cache_write 1.25)', () => {
+		const terra = makePrice(1, 0.05, 1.25);
+
+		test('full split with noCacheTokens: prices fresh, reads and writes separately', () => {
+			const cost = calcInputCost(
+				makeUsage({
+					inputTokens: 1_000_000,
+					noCacheTokens: 500_000,
+					cacheReadTokens: 300_000,
+					cacheWriteTokens: 200_000,
+				}),
+				terra,
+			);
+
+			// 500_000 fresh @ $1/M + 300_000 read @ $0.05/M + 200_000 written @ $1.25/M
+			expect(cost).toBeCloseTo(0.5 + 0.015 + 0.25, 10);
+		});
+
+		test('without noCacheTokens: fresh tokens subtract both cache counts', () => {
+			const cost = calcInputCost(
+				makeUsage({
+					inputTokens: 1_000_000,
+					cacheReadTokens: 300_000,
+					cacheWriteTokens: 200_000,
+				}),
+				terra,
+			);
+
+			expect(cost).toBeCloseTo(0.5 + 0.015 + 0.25, 10);
+		});
+
+		test('cache writes with no cacheWrite price are charged at the input rate', () => {
+			const cost = calcInputCost(
+				makeUsage({
+					inputTokens: 1_000_000,
+					noCacheTokens: 500_000,
+					cacheReadTokens: 300_000,
+					cacheWriteTokens: 200_000,
+				}),
+				makePrice(1, 0.05),
+			);
+
+			// 200_000 written @ $1/M instead of $1.25/M
+			expect(cost).toBeCloseTo(0.5 + 0.015 + 0.2, 10);
+		});
 	});
 });
 
