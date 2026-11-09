@@ -1,5 +1,11 @@
 # ff-ai
 
+## 0.6.0
+
+### Minor Changes
+
+- 2f3b3d8: Apply models.dev schema 2 long-context overrides and service-tier multipliers in `getModelUsageCost`, which now accepts an optional `serviceTier`.
+
 ## 0.5.1
 
 ### Patch Changes
