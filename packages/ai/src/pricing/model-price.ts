@@ -55,6 +55,20 @@ class ModelsDevData extends Schema.Class<ModelsDevData>('ff-ai/ModelsDevData')({
 		output: PricePerMillion,
 		cache_read: Schema.optional(PricePerMillion),
 		cache_write: Schema.optional(PricePerMillion),
+		context_over: Schema.optional(
+			Schema.Array(
+				Schema.Struct({
+					gt: Schema.Number,
+					input: Schema.optional(PricePerMillion),
+					output: Schema.optional(PricePerMillion),
+					cache_read: Schema.optional(PricePerMillion),
+					cache_write: Schema.optional(PricePerMillion),
+				}),
+			),
+		),
+		service_tier_multipliers: Schema.optional(
+			Schema.Record(Schema.String, Schema.Number),
+		),
 	}),
 }) {
 	get input() {
@@ -72,15 +86,100 @@ class ModelsDevData extends Schema.Class<ModelsDevData>('ff-ai/ModelsDevData')({
 	get cacheWrite() {
 		return this.cost.cache_write;
 	}
+
+	get contextOver() {
+		return this.cost.context_over;
+	}
+
+	get serviceTierMultipliers() {
+		return this.cost.service_tier_multipliers;
+	}
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
 	typeof value === 'object' && value !== null && !Array.isArray(value);
 
+const definedEntries = (entries: Record<string, unknown>) =>
+	Object.fromEntries(Object.entries(entries).filter((e) => e[1] !== undefined));
+
+const hasOnlyKeys = (value: Record<string, unknown>, key: string) => {
+	const keys = Object.keys(value);
+	return keys.length === 1 && keys[0] === key;
+};
+
+/** The base rate is the "5m" entry when cache.write is a per-duration map */
+const flattenCacheWrite = (write: unknown) =>
+	isRecord(write) ? write['5m'] : write;
+
+/**
+ * Merges input and output overrides that share a `when.context.gt` threshold
+ * into one entry. Overrides with any other condition are skipped, since
+ * applying them unconditionally would misprice.
+ */
+const normalizeContextOverrides = (
+	input: Record<string, unknown> | undefined,
+	output: Record<string, unknown> | undefined,
+) => {
+	const byThreshold = new Map<number, Record<string, unknown>>();
+
+	const collect = (
+		side: Record<string, unknown> | undefined,
+		toRates: (override: Record<string, unknown>) => Record<string, unknown>,
+	) => {
+		if (!Array.isArray(side?.overrides)) return;
+		for (const override of side.overrides) {
+			if (!isRecord(override) || !isRecord(override.when)) continue;
+			if (!hasOnlyKeys(override.when, 'context')) continue;
+			const context = override.when.context;
+			if (!isRecord(context) || !hasOnlyKeys(context, 'gt')) continue;
+			if (typeof context.gt !== 'number') continue;
+			byThreshold.set(context.gt, {
+				...byThreshold.get(context.gt),
+				...definedEntries(toRates(override)),
+			});
+		}
+	};
+
+	collect(input, (override) => {
+		const cache = isRecord(override.cache) ? override.cache : undefined;
+		return {
+			input: override.price,
+			cache_read: cache?.read,
+			cache_write: flattenCacheWrite(cache?.write),
+		};
+	});
+	collect(output, (override) => ({ output: override.price }));
+
+	return Array.from(byThreshold, (entry) => ({ gt: entry[0], ...entry[1] }));
+};
+
+/** Maps `service_tier` -> text factor, skipping entries that aren't a plain tier match */
+const normalizeServiceTierMultipliers = (multipliers: unknown) => {
+	if (!Array.isArray(multipliers)) return {};
+
+	const byTier: Record<string, number> = {};
+	for (const multiplier of multipliers) {
+		if (!isRecord(multiplier) || !isRecord(multiplier.when)) continue;
+		if (!hasOnlyKeys(multiplier.when, 'service_tier')) continue;
+		const serviceTier = multiplier.when.service_tier;
+		if (!isRecord(serviceTier) || typeof serviceTier.equals !== 'string') {
+			continue;
+		}
+		const factor = isRecord(multiplier.factor)
+			? multiplier.factor.text
+			: multiplier.factor;
+		if (typeof factor !== 'number') continue;
+		byTier[serviceTier.equals] = factor;
+	}
+	return byTier;
+};
+
 /**
  * models.dev schema 2 nests base text rates under `cost.text`; flatten them to
- * the legacy `cost` shape. Overrides, multipliers and other modalities are
- * ignored. Absent rates stay absent so decoding still reports the missing key.
+ * the legacy `cost` shape. Long-context overrides (`when.context.gt`) become
+ * `context_over` and `service_tier` multipliers become
+ * `service_tier_multipliers`. Other modalities are ignored. Absent rates stay
+ * absent so decoding still reports the missing key.
  */
 const normalizeModelsDevCost = (
 	parsed: Record<string, unknown>,
@@ -91,19 +190,25 @@ const normalizeModelsDevCost = (
 	const input = isRecord(cost.text.input) ? cost.text.input : undefined;
 	const output = isRecord(cost.text.output) ? cost.text.output : undefined;
 	const cache = isRecord(input?.cache) ? input.cache : undefined;
-	const write = cache?.write;
 
-	const flat = {
-		input: input?.price,
-		output: output?.price,
-		cache_read: cache?.read,
-		cache_write: isRecord(write) ? write['5m'] : write,
-	};
+	const contextOver = normalizeContextOverrides(input, output);
+	const serviceTierMultipliers = normalizeServiceTierMultipliers(
+		cost.multipliers,
+	);
+
 	return {
 		...parsed,
-		cost: Object.fromEntries(
-			Object.entries(flat).filter((entry) => entry[1] !== undefined),
-		),
+		cost: definedEntries({
+			input: input?.price,
+			output: output?.price,
+			cache_read: cache?.read,
+			cache_write: flattenCacheWrite(cache?.write),
+			context_over: contextOver.length > 0 ? contextOver : undefined,
+			service_tier_multipliers:
+				Object.keys(serviceTierMultipliers).length > 0
+					? serviceTierMultipliers
+					: undefined,
+		}),
 	};
 };
 
@@ -189,9 +294,66 @@ export function calcInputCost(
 	);
 }
 
+const serviceTierFactor = (
+	multipliers: Readonly<Record<string, number>> | undefined,
+	serviceTier: string | undefined,
+) => {
+	if (
+		serviceTier == null ||
+		serviceTier === 'default' ||
+		serviceTier === 'auto'
+	) {
+		return 1;
+	}
+	if (multipliers == null || !Object.hasOwn(multipliers, serviceTier)) return 1;
+	return multipliers[serviceTier] ?? 1;
+};
+
+type ResolvedRates = {
+	input: PricePerMillion;
+	output: PricePerMillion;
+	cacheRead?: PricePerMillion;
+	cacheWrite?: PricePerMillion;
+};
+
+/**
+ * Picks the rates for one request. The highest-threshold context override that
+ * `inputTokens` exceeds replaces the base rates for the whole request (fields
+ * it omits keep the base rate), then the service tier factor scales them all.
+ */
+export function resolveRates(
+	price: ModelsDevData,
+	params: { inputTokens: number | undefined; serviceTier?: string },
+): ResolvedRates {
+	const inputTokens = params.inputTokens;
+	const override = (price.contextOver ?? [])
+		.filter((candidate) => inputTokens != null && inputTokens > candidate.gt)
+		.reduce<NonNullable<typeof price.contextOver>[number] | undefined>(
+			(best, candidate) =>
+				best == null || candidate.gt > best.gt ? candidate : best,
+			undefined,
+		);
+
+	const factor = serviceTierFactor(
+		price.serviceTierMultipliers,
+		params.serviceTier,
+	);
+	const scale = (rate: PricePerMillion) => PricePerMillion.make(rate * factor);
+	const scaleOptional = (rate: PricePerMillion | undefined) =>
+		rate == null ? undefined : scale(rate);
+
+	return {
+		input: scale(override?.input ?? price.input),
+		output: scale(override?.output ?? price.output),
+		cacheRead: scaleOptional(override?.cache_read ?? price.cacheRead),
+		cacheWrite: scaleOptional(override?.cache_write ?? price.cacheWrite),
+	};
+}
+
 export const getModelUsageCost = Effect.fn(function* (params: {
 	model: ModelInput;
 	usage: Ai.LanguageModelUsage;
+	serviceTier?: string;
 }) {
 	const cacheKey = `${ModelInput.getProvider(params.model)}/${ModelInput.getModelId(params.model)}`;
 
@@ -208,15 +370,16 @@ export const getModelUsageCost = Effect.fn(function* (params: {
 
 	const usage = params.usage;
 
-	const inputCost = calcInputCost(usage, {
-		input: price.input,
-		cacheRead: price.cacheRead,
-		cacheWrite: price.cacheWrite,
+	const rates = resolveRates(price, {
+		inputTokens: usage.inputTokens,
+		serviceTier: params.serviceTier,
 	});
+
+	const inputCost = calcInputCost(usage, rates);
 
 	const outputCost = (() => {
 		if (usage.outputTokens == null) return Usd.make(0);
-		return calcCost(usage.outputTokens, price.output);
+		return calcCost(usage.outputTokens, rates.output);
 	})();
 
 	const cost: UsageCost = {
